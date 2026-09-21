@@ -3,6 +3,9 @@
 import { useSyncExternalStore } from "react";
 import { IntakeWizard } from "@/components/plan/intake-wizard";
 import { PlanHome } from "@/components/plan/plan-home";
+import { CheckFlow } from "@/components/check/check-flow";
+import { CheckResults } from "@/components/check/check-results";
+import { ScreenerSubmission, evaluate } from "@/lib/screeners";
 import { localToday } from "@/lib/care-client";
 import type { PlanView } from "@/lib/care-plan";
 
@@ -50,10 +53,17 @@ const MOCK: PlanView = {
   can_replan: false,
 };
 
-export function PlanPreview({ view }: { view: "home" | "wizard" }) {
+export function PlanPreview({ view }: { view: "home" | "wizard" | "check" | "results" }) {
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   if (!mounted) return null;
   if (view === "wizard") return <IntakeWizard onCreated={() => {}} />;
+  if (view === "check") return <CheckFlow onDone={() => {}} />;
+  if (view === "results") {
+    const base = evaluate(ScreenerSubmission.parse({ phq9: [2, 2, 2, 2, 1, 2, 1, 1, 0], gad7: [2, 2, 2, 2, 1, 2, 1], sleep: [3, 2, 2] }), [], `${day(-14)}T09:00:00Z`);
+    const now = evaluate(ScreenerSubmission.parse({ phq9: [1, 1, 2, 1, 1, 1, 1, 0, 0], gad7: [1, 2, 1, 1, 1, 1, 1], sleep: [2, 1, 1] }), [base], `${day(0)}T09:00:00Z`);
+    const hist = [now, base].map((r) => ({ id: r.at, at: r.at, tier: r.tier, risk: r.risk, phq9: r.phq9.score, gad7: r.gad7.score, sleep: r.sleep.score }));
+    return <CheckResults record={now} history={hist} nextDue={`${day(14)}T09:00:00Z`} onRetake={() => {}} />;
+  }
   return (
     <PlanHome
       plan={MOCK}

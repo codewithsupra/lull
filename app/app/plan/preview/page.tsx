@@ -5,5 +5,6 @@ import { PlanPreview } from "./plan-preview";
 export default async function Page({ searchParams }: PageProps<"/app/plan/preview">) {
   if (process.env.NODE_ENV === "production") notFound();
   const { view } = await searchParams;
-  return <PlanPreview view={view === "wizard" ? "wizard" : "home"} />;
+  const v = view === "wizard" || view === "check" || view === "results" ? view : "home";
+  return <PlanPreview view={v} />;
 }

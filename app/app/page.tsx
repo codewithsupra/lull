@@ -8,6 +8,7 @@ import { MoodChart } from "@/components/app/mood-chart";
 import { GuestNote } from "@/components/app/guest-note";
 import { fetchCareStats, type CareStats } from "@/lib/care-client";
 import { levelFor } from "@/lib/care-plan";
+import { TIERS, type Tier } from "@/lib/screeners";
 import {
   fetchCheckins,
   fetchRecentPractice,
@@ -44,6 +45,7 @@ export default function TodayPage() {
   const [recent, setRecent] = useState<PracticeSession[]>([]);
   const [checkins, setCheckins] = useState<MoodCheckin[]>([]);
   const [care, setCare] = useState<CareStats | null>(null);
+  const [check, setCheck] = useState<{ due: boolean; tierName: string | null } | null>(null);
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -60,6 +62,13 @@ export default function TodayPage() {
       setCheckins(c);
       setCare(cs);
     });
+    fetch("/api/screeners", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { latest: { tier: Tier } | null; next_due: string | null } | null) => {
+        if (!j) return;
+        setCheck({ due: !j.next_due || Date.parse(j.next_due) <= Date.now(), tierName: j.latest ? TIERS[j.latest.tier].name : null });
+      })
+      .catch(() => {});
   }, [user]);
 
   const firstName = user?.name?.split(" ")[0] ?? user?.email?.split("@")[0];
@@ -106,6 +115,16 @@ export default function TodayPage() {
           </div>
         )}
       </Link>
+
+      {check?.due && (
+        <Link href="/app/check" className="glass group flex flex-wrap items-center justify-between gap-3 rounded-3xl border-sky/25 p-5">
+          <div>
+            <p className="mono-label !text-sky">{check.tierName ? "your 2-week check is due" : "start here · 3 minutes"}</p>
+            <p className="mt-1 text-lg">{check.tierName ? "See how far you've come since last time." : "Take the wellbeing check to find the right support for you."}</p>
+          </div>
+          <span className="rounded-full bg-sky px-4 py-2 text-sm font-semibold text-bg transition group-hover:translate-x-0.5">Begin →</span>
+        </Link>
+      )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {tiles.map((t) => (
