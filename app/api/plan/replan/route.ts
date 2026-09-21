@@ -8,6 +8,7 @@ import { PRIVATE_ROUTING, addDays, buildWeekTasks, decryptTask, requireUser, wit
 import { decrypt, decryptJson, decryptOpt, encryptJson } from "@/lib/crypto";
 import { redactDeep } from "@/lib/redact";
 import { logError, logEvent } from "@/lib/log";
+import { requireFeature } from "@/lib/billing-server";
 
 export const maxDuration = 60;
 
@@ -36,7 +37,9 @@ export async function POST(request: NextRequest) {
   if (body.data.today < addDays(plan.started_at, plan.week_index * 7 - 1)) {
     return NextResponse.json({ error: "Your next week unlocks on the last day of this one." }, { status: 409 });
   }
-  if (!(await withinLimit(insforge, "replan", 5))) return NextResponse.json({ error: "Try again tomorrow." }, { status: 429 });
+  const gate = await requireFeature(insforge, "replan");
+  if ("error" in gate) return gate.error;
+  if (!(await withinLimit(insforge, "replan", gate.limit))) return NextResponse.json({ error: "Try again tomorrow." }, { status: 429 });
 
   const [tasksRes, medsRes, moodRes] = await Promise.all([
     insforge.database

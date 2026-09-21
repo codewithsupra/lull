@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { CATEGORIES, CRISIS_TERMS, GOALS, type Category, type MedicationInput } from "@/lib/care-plan";
 import { localTimezone, localToday } from "@/lib/care-client";
 import { CrisisCard } from "./crisis-card";
+import { handlePaywall } from "@/lib/billing-client";
 
 type Med = MedicationInput & { key: string; confirmed: boolean; fromScan: boolean };
 
@@ -72,6 +73,7 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
       body.append("file", file);
       const res = await fetch("/api/intake/extract", { method: "POST", body });
       const json = await res.json();
+      if (handlePaywall(res.status, json)) return;
       if (!res.ok) throw new Error(json.error);
       if (!json.readable || !json.medications.length) {
         setScanNote("We couldn't find medicines in that image. Try a sharper photo, or add them by hand on the next step.");

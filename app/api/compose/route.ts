@@ -3,8 +3,8 @@ import { z } from "zod";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
 import { openrouter, CHAT_MODEL, parseJsonReply } from "@/lib/ai/openrouter";
 import { PlanSchema } from "@/lib/plan";
-
-const DAILY_LIMIT = 15;
+import { requireFeature } from "@/lib/billing-server";
+import { FEATURES } from "@/lib/billing";
 
 const Body = z.object({
   prompt: z.string().trim().min(3).max(600),
@@ -40,13 +40,17 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: "Tell Lull a little more about how you feel." }, { status: 400 });
   const { prompt, minutes } = parsed.data;
 
+  const gate = await requireFeature(insforge, "compose");
+  if ("error" in gate) return gate.error;
   const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
   const { count } = await insforge.database
     .from("composed_sessions")
     .select("id", { count: "exact", head: true })
     .gte("created_at", since);
-  if ((count ?? 0) >= DAILY_LIMIT) {
-    return NextResponse.json({ error: "You've composed a lot today. Replay one from your history, or come back tomorrow." }, { status: 429 });
+  if ((count ?? 0) >= gate.limit) {
+    return gate.plan.pro
+      ? NextResponse.json({ error: "You've composed a lot today. Replay one from your history, or come back tomorrow." }, { status: 429 })
+      : NextResponse.json({ error: `Free includes ${gate.limit} composed sessions a day. Go Pro for ${FEATURES.compose.pro}.`, upgrade: true, feature: "compose" }, { status: 402 });
   }
 
   let plan;

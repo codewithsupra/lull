@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useUser } from "@/components/app/user-context";
 import { MoodChart } from "@/components/app/mood-chart";
 import { GuestNote } from "@/components/app/guest-note";
+import { handlePaywall } from "@/lib/billing-client";
 import { MOODS, deleteCheckin, fetchCheckins, type MoodCheckin } from "@/lib/data";
 
 type Insight = { headline: string; observations: string[]; suggestion: { text: string; action: "breathe" | "sounds" | "compose" } };
@@ -31,6 +32,7 @@ export default function JournalPage() {
     try {
       const res = await fetch("/api/insight", { method: "POST" });
       const json = await res.json();
+      if (handlePaywall(res.status, json)) return;
       if (!res.ok) throw new Error(json.error);
       setInsight(json);
     } catch (e) {

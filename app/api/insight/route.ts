@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
 import { openrouter, CHAT_MODEL, parseJsonReply } from "@/lib/ai/openrouter";
+import { requireFeature } from "@/lib/billing-server";
+import { withinLimit } from "@/lib/care-plan-server";
 
 const Insight = z.object({
   headline: z.string().max(140),
@@ -16,6 +18,9 @@ export async function POST() {
   const insforge = await createInsForgeServerClient();
   const { data: auth } = await insforge.auth.getCurrentUser();
   if (!auth?.user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  const gate = await requireFeature(insforge, "insight");
+  if ("error" in gate) return gate.error;
+  if (!(await withinLimit(insforge, "insight", gate.limit))) return NextResponse.json({ error: "That's plenty of insight for today. Come back tomorrow." }, { status: 429 });
 
   const [checkins, practice] = await Promise.all([
     insforge.database.from("mood_checkins").select("mood, energy, tags, note, created_at").order("created_at", { ascending: false }).limit(30),

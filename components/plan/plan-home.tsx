@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { CATEGORIES, DAY_BONUS, levelFor, sessionHref, type PlanTask, type PlanView, type Slot } from "@/lib/care-plan";
 import { completeTask, currentPushSubscription, disablePush, enablePush, fetchCareStats, localToday, pushSupported, type CareStats } from "@/lib/care-client";
 import { NightGarden } from "./night-garden";
+import { handlePaywall } from "@/lib/billing-client";
 
 const SLOTS: { id: Slot; label: string; icon: string }[] = [
   { id: "morning", label: "Morning", icon: "☀︎" },
@@ -93,6 +94,7 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
     try {
       const res = await fetch("/api/plan/replan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ today: localToday() }) });
       const json = await res.json();
+      if (handlePaywall(res.status, json)) return;
       if (!res.ok) throw new Error(json.error);
       setReview(json.review);
       onChanged();

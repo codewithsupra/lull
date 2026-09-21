@@ -20,7 +20,7 @@ export async function requireUser() {
 }
 
 /** Per-user rolling 24h limit, counted from the content-free ai_usage ledger. */
-export async function withinLimit(insforge: ServerClient, kind: "extract" | "plan" | "replan", limit: number) {
+export async function withinLimit(insforge: ServerClient, kind: "extract" | "plan" | "replan" | "insight" | "screener", limit: number) {
   const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
   const { count } = await insforge.database
     .from("ai_usage")

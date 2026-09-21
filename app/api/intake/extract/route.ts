@@ -5,6 +5,7 @@ import { Extraction } from "@/lib/care-plan";
 import { PRIVATE_ROUTING, requireUser, withinLimit } from "@/lib/care-plan-server";
 import { redactDeep } from "@/lib/redact";
 import { logError, logEvent } from "@/lib/log";
+import { requireFeature } from "@/lib/billing-server";
 
 export const maxDuration = 60;
 
@@ -32,7 +33,9 @@ export async function POST(request: NextRequest) {
   if (file.size > MAX_BYTES) return NextResponse.json({ error: "That file is over 8 MB. Try a smaller photo." }, { status: 413 });
   if (!TYPES.has(file.type)) return NextResponse.json({ error: "Use a JPG, PNG, WEBP, HEIC photo or a PDF." }, { status: 415 });
 
-  if (!(await withinLimit(insforge, "extract", 20))) {
+  const gate = await requireFeature(insforge, "scan");
+  if ("error" in gate) return gate.error;
+  if (!(await withinLimit(insforge, "extract", gate.limit))) {
     return NextResponse.json({ error: "You've scanned a lot today. Add medicines manually, or try again tomorrow." }, { status: 429 });
   }
 

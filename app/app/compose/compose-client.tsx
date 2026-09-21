@@ -8,6 +8,7 @@ import { SessionPlayer } from "@/components/app/session-player";
 import { timeAgo } from "@/lib/data";
 import type { Plan } from "@/lib/plan";
 import { TaskReturn, useTaskCompletion } from "@/components/plan/task-return";
+import { handlePaywall } from "@/lib/billing-client";
 
 const SUGGESTIONS = [
   "Can't switch off after a long day of meetings",
@@ -66,6 +67,7 @@ export function ComposeClient({ initialPrompt, taskId }: { initialPrompt: string
         body: JSON.stringify({ prompt, minutes }),
       });
       const json = await res.json();
+      if (handlePaywall(res.status, json)) return;
       if (!res.ok) throw new Error(json.error ?? "Something went wrong.");
       showPlan(json.plan);
       if (json.id) {

@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { signOut } from "@/app/actions/auth";
 import type { SessionUser } from "@/lib/insforge/server";
+import { PaywallHost } from "@/components/billing/paywall-host";
+import { fetchBilling } from "@/lib/billing-client";
 
 const NAV = [
   { href: "/app", label: "Today", key: "T", icon: "◐" },
@@ -29,6 +31,14 @@ export function AppShell({ user, children }: { user: SessionUser | null; childre
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [router]);
+
+  const [pro, setPro] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    fetchBilling()
+      .then((b) => setPro(!!b.plan?.pro))
+      .catch(() => {});
+  }, [user, pathname]);
 
   const isActive = (href: string) => (href === "/app" ? pathname === "/app" : pathname.startsWith(href));
 
@@ -59,6 +69,12 @@ export function AppShell({ user, children }: { user: SessionUser | null; childre
           </nav>
           {user ? (
             <form action={signOut} className="flex items-center gap-3">
+              {pro === false && (
+                <Link href="/app/pro" className="rounded-full bg-lime px-3 py-1 text-xs font-semibold text-bg shadow-[0_0_24px_-6px_var(--lime)]">
+                  Go Pro
+                </Link>
+              )}
+              {pro && <span className="rounded-full border border-lime/40 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-lime">pro</span>}
               <span className="hidden max-w-[160px] truncate text-xs text-muted sm:inline">{user.name ?? user.email}</span>
               <button className="kbd">Sign out</button>
             </form>
@@ -69,6 +85,7 @@ export function AppShell({ user, children }: { user: SessionUser | null; childre
       </header>
 
       <main className="mx-auto max-w-6xl px-4 pb-32 pt-8 sm:px-6 md:pb-16">{children}</main>
+      <PaywallHost />
 
       {/* mobile tab bar */}
       <nav className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-6 rounded-2xl border border-white/10 bg-bg/80 p-1.5 backdrop-blur-xl md:hidden">
