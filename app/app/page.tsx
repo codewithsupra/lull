@@ -6,6 +6,8 @@ import { useUser } from "@/components/app/user-context";
 import { CheckinCard } from "@/components/app/checkin-card";
 import { MoodChart } from "@/components/app/mood-chart";
 import { GuestNote } from "@/components/app/guest-note";
+import { fetchCareStats, type CareStats } from "@/lib/care-client";
+import { levelFor } from "@/lib/care-plan";
 import {
   fetchCheckins,
   fetchRecentPractice,
@@ -41,6 +43,7 @@ export default function TodayPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [recent, setRecent] = useState<PracticeSession[]>([]);
   const [checkins, setCheckins] = useState<MoodCheckin[]>([]);
+  const [care, setCare] = useState<CareStats | null>(null);
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -51,10 +54,11 @@ export default function TodayPage() {
 
   useEffect(() => {
     if (!user) return;
-    void Promise.all([fetchStats(), fetchRecentPractice(), fetchCheckins(14)]).then(([s, r, c]) => {
+    void Promise.all([fetchStats(), fetchRecentPractice(), fetchCheckins(14), fetchCareStats()]).then(([s, r, c, cs]) => {
       setStats(s);
       setRecent(r);
       setCheckins(c);
+      setCare(cs);
     });
   }, [user]);
 
@@ -78,6 +82,30 @@ export default function TodayPage() {
       </div>
 
       {!user && <GuestNote>You&apos;re exploring as a guest. Breathe and Sounds work fully. Sign up to save your streak, check-ins and composed sessions.</GuestNote>}
+
+      <Link href="/app/plan" className="group glass relative flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-3xl p-6">
+        <div className="absolute -left-10 -top-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(200,255,110,0.22),transparent_70%)] blur-2xl transition-transform duration-700 group-hover:scale-125" />
+        {care?.plan ? (
+          <>
+            <div className="relative">
+              <p className="mono-label !text-lime">your plan · week {care.plan.week} of 4</p>
+              <p className="mt-1 font-[family-name:var(--font-unbounded)] text-2xl font-semibold">
+                {care.today.done}/{care.today.total} done today
+              </p>
+            </div>
+            <div className="relative text-right font-mono text-xs text-muted">
+              <div className="text-lime">Lv {levelFor(care.xp).level} · {care.xp} XP</div>
+              <div>🔥 {care.streak} day streak</div>
+            </div>
+          </>
+        ) : (
+          <div className="relative">
+            <p className="mono-label !text-lime">new · care plan</p>
+            <p className="mt-1 font-[family-name:var(--font-unbounded)] text-xl font-semibold sm:text-2xl">Turn your prescription into a daily plan →</p>
+            <p className="mt-1 text-sm text-muted">Scan it or describe your diagnosis. Private and encrypted, with XP for every step.</p>
+          </div>
+        )}
+      </Link>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {tiles.map((t) => (

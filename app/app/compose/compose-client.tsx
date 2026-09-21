@@ -7,6 +7,7 @@ import { useUser } from "@/components/app/user-context";
 import { SessionPlayer } from "@/components/app/session-player";
 import { timeAgo } from "@/lib/data";
 import type { Plan } from "@/lib/plan";
+import { TaskReturn, useTaskCompletion } from "@/components/plan/task-return";
 
 const SUGGESTIONS = [
   "Can't switch off after a long day of meetings",
@@ -20,8 +21,9 @@ const STAGES = ["Listening…", "Choosing a breath…", "Mixing your soundscape�
 
 type History = { id: string; title: string; prompt: string; plan: Plan; created_at: string };
 
-export function ComposeClient({ initialPrompt }: { initialPrompt: string }) {
+export function ComposeClient({ initialPrompt, taskId }: { initialPrompt: string; taskId?: string }) {
   const user = useUser();
+  const task = useTaskCompletion(taskId);
   const [prompt, setPrompt] = useState(initialPrompt);
   const [minutes, setMinutes] = useState(5);
   const [loading, setLoading] = useState(false);
@@ -79,7 +81,8 @@ export function ComposeClient({ initialPrompt }: { initialPrompt: string }) {
 
   return (
     <div className="space-y-10">
-      {plan && <SessionPlayer key={planKey} plan={plan} canLog={!!user} />}
+      {taskId && <TaskReturn state={task.state} xp={task.xp} hint="Compose a session for how you feel, then listen for at least a minute." />}
+      {plan && <SessionPlayer key={planKey} plan={plan} canLog={!!user} onFinished={() => void task.complete()} />}
 
       <section className="grid gap-10 lg:grid-cols-[1fr_320px]">
         <div>

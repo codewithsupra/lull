@@ -185,3 +185,18 @@ input[type="range"].slider::-moz-range-thumb {
   color: transparent;
   animation: shimmer 2.2s linear infinite;
 }
+
+.field {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  color-scheme: dark;
+}
+.field:focus {
+  border-color: color-mix(in oklab, var(--mint) 50%, transparent);
+  box-shadow: 0 0 0 3px rgba(142, 245, 212, 0.12);
+}

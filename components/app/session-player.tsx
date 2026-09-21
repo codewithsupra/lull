@@ -9,7 +9,7 @@ import { planSeconds, type Plan } from "@/lib/plan";
 
 type Status = "idle" | "playing" | "done";
 
-export function SessionPlayer({ plan, canLog }: { plan: Plan; canLog: boolean }) {
+export function SessionPlayer({ plan, canLog, onFinished }: { plan: Plan; canLog: boolean; onFinished?: (seconds: number) => void }) {
   const [status, setStatus] = useState<Status>("idle");
   const [step, setStep] = useState(-1);
   const [voice, setVoice] = useState(true);
@@ -66,14 +66,20 @@ export function SessionPlayer({ plan, canLog }: { plan: Plan; canLog: boolean })
     if (!(await wait(5000, run))) return;
     engine.fadeOut(6);
     setStatus("done");
-    if (canLog) void logPractice("composed", plan.title, (Date.now() - startedRef.current) / 1000);
+    const secs = (Date.now() - startedRef.current) / 1000;
+    if (canLog) void logPractice("composed", plan.title, secs);
+    onFinished?.(secs);
   };
 
   const stop = () => {
     runRef.current++;
     window.speechSynthesis?.cancel();
     getEngine().fadeOut(2);
-    if (canLog && startedRef.current) void logPractice("composed", plan.title, (Date.now() - startedRef.current) / 1000);
+    if (canLog && startedRef.current) {
+      const secs = (Date.now() - startedRef.current) / 1000;
+      void logPractice("composed", plan.title, secs);
+      if (secs >= 60) onFinished?.(secs);
+    }
     startedRef.current = 0;
     setStatus("idle");
     setStep(-1);

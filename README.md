@@ -23,6 +23,31 @@ Apps like Calm and Headspace are libraries: you browse hundreds of pre-recorded 
 | Browse to find a session | One sentence → a full session |
 | Subscription | Free & open source |
 
+## ❀ Care Plan: prescription → a daily plan with XP
+
+**The flagship feature.** People newly diagnosed with anxiety, insomnia, stress, low mood or ADHD often leave the doctor with a prescription and no routine. Care Plan turns that into a **4-week adaptive plan**:
+
+1. **Intake.** Consent, a short quiz (condition, severity, wake/bed times, goals), then optionally a **prescription scan** (photo or PDF, printed or handwritten) and a free-text description.
+2. **Confirm.** A vision model extracts the regimen, and the user checks each medicine before anything is saved. Medication tasks are **built by code straight from the confirmed prescription**, never by the LLM, so a dose can't drift.
+3. **Plan.** An LLM designs evidence-based habits (CBT-I, stimulus control, light exposure, worry time, behavioural activation, and so on), Lull sessions that deep-link into breathwork, soundscapes and compose, learn cards, and doctor-prep questions. Anything worth checking (unusual doses, driving on sedatives, caffeine) becomes an **"Ask your doctor about…" flag**. It is never turned into an instruction.
+4. **Play.** Each task earns XP (medicine 20, habit 15, session 30, learn 10, reflect 10, plus 50 for a complete day). XP drives levels and streaks, and a **WebGL night garden** grows as you go: a leaf per task, a bloom per complete day, and fireflies for your streak.
+5. **Adapt.** At the end of each week the plan reviews completion and mood, keeps what worked, eases what didn't, and generates the next week.
+6. **Remind.** Web push (PWA) at each part of the day. The payload is always generic and never names medicines or conditions.
+
+### Privacy & security model
+
+| Concern | What Lull does |
+| --- | --- |
+| Prescription images | Read in request memory only: never written to disk, storage or logs |
+| AI providers | OpenRouter routing restricted to zero-data-retention providers (`data_collection: deny`, `zdr: true`) |
+| PII | The model is instructed never to return names, dates, IDs or contact details, and a server-side redactor (`lib/redact.ts`) scrubs any that slip through |
+| Health data at rest | AES-256-GCM field encryption (`lib/crypto.ts`) with versioned ciphertext (`v1:`) for key rotation, decrypted only in server routes |
+| Access control | RLS on every table with `(select auth.uid())` policies and anon revoked. Updates are column-level only, and task completion is server-stamped by a trigger to stop XP back-dating. The InsForge advisor reports 0 findings |
+| Logging | `lib/log.ts` logs event names, codes and ids only, never bodies or model output |
+| Transport & browser | Strict CSP, HSTS preload, frame-ancestors none, `no-store` on all API responses |
+| Right to delete | One tap deletes plan, medicines, tasks, reminders and profile |
+| Safety | Crisis-language detection shows resources (988, Tele-MANAS 14416, Samaritans, findahelpline.com) before continuing |
+
 ## Features
 
 - **✦ Compose.** Describe your state ("big interview tomorrow, mind racing at 1am"). The server asks an LLM, through InsForge's OpenRouter model gateway, for a structured plan: title, intention, breath technique, a 7-layer sound mix, a paced script and a closing line. Zod validates the plan and the database saves it, and the player reads it aloud with the Speech Synthesis API over the generated soundscape. If someone mentions self-harm, the plan carries a care message pointing them to crisis resources.
@@ -42,8 +67,16 @@ app/
   api/compose/route.ts     auth → daily rate limit → LLM → zod → insert (RLS)
   api/insight/route.ts     auth → recent rows → LLM pattern summary
   api/auth/{refresh,callback}
+  api/intake/extract       prescription photo/PDF → redacted regimen (in-memory, ZDR model)
+  api/plan                 generate (POST) · load today (GET) · delete everything (DELETE)
+  api/plan/replan          adaptive next-week plan from completion + mood
+  api/push/{subscribe,dispatch}   web push; dispatch runs every 5 min via InsForge schedule
 proxy.ts                   Next 16 proxy: refreshes InsForge session cookies
 lib/audio/engine.ts        generative Web Audio synth engine (singleton)
+lib/crypto.ts              AES-256-GCM field encryption for health data
+lib/redact.ts              PII scrubber (defence in depth)
+lib/care-plan*.ts          schemas, prompts, deterministic task builder, server loaders
+components/plan/           intake wizard, plan home, night garden (WebGL), crisis card
 lib/breath.ts              breathing patterns
 components/landing/        particle field, stacked scroll type, live demos
 migrations/                SQL schema, RLS policies, my_stats() RPC
@@ -51,7 +84,7 @@ migrations/                SQL schema, RLS policies, my_stats() RPC
 
 **Auth.** Uses `@insforge/sdk/ssr`. Sign-in, sign-up and OAuth run as server actions, and the refresh token sits in an httpOnly cookie. The browser client only reads the short-lived access token, and `proxy.ts` keeps Server Components in sync.
 
-**Data.** Three append-only tables: `mood_checkins`, `practice_sessions` and `composed_sessions`. Row-level security limits each user to their own rows (select, insert and delete only, with `UPDATE` revoked), and `anon` has no access. Size limits are enforced as `CHECK` constraints. `my_stats()` computes the streak with a gaps-and-islands query as `SECURITY INVOKER`, so RLS still applies inside it.
+**Data.** Mood and practice data live in three append-only tables: `mood_checkins`, `practice_sessions` and `composed_sessions`. Row-level security limits each user to their own rows (select, insert and delete only, with `UPDATE` revoked), and `anon` has no access. Size limits are enforced as `CHECK` constraints. `my_stats()` computes the streak with a gaps-and-islands query as `SECURITY INVOKER`, so RLS still applies inside it.
 
 **AI.** The OpenRouter key is server-only. Each user gets 15 compositions per 24 hours, counted from their own rows. Replies use JSON mode and are validated with Zod, which falls back to safe defaults when a field is malformed.
 
