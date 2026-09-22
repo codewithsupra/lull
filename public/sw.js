@@ -1,6 +1,27 @@
-/* Lull service worker: web push reminders. No caching of health data. */
-self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+/* Lull service worker: push reminders + offline crisis page. No health data is cached. */
+const OFFLINE_URL = "/offline-safety.html";
+const CACHE = "lull-crisis-v1";
+
+self.addEventListener("install", (event) => {
+  // Crisis numbers must survive being offline, so they are precached on install.
+  event.waitUntil(caches.open(CACHE).then((c) => c.add(new Request(OFFLINE_URL, { cache: "reload" }))).then(() => self.skipWaiting()));
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim()),
+  );
+});
+
+// Network-first for page loads; if the network fails, serve the offline crisis page.
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+  if (request.method !== "GET" || request.mode !== "navigate") return;
+  event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_URL).then((r) => r ?? Response.error())));
+});
 
 self.addEventListener("push", (event) => {
   let data = { title: "Lull", body: "Your plan is waiting.", url: "/app/plan", tag: "plan" };

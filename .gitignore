@@ -58,3 +58,5 @@ next-env.d.ts
 !.env.example
 
 /.scratch
+
+public/offline-safety.html

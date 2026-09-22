@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { SEVERITY_COPY, TIERS, type ScreenerRecord, type Tier } from "@/lib/screeners";
+import { openCrisis } from "@/lib/safety-client";
 
 export type HistoryPoint = { id: string; at: string; tier: Tier; risk: boolean; phq9: number; gad7: number; sleep: number };
 
@@ -108,7 +109,15 @@ export function CheckResults({ record, history, nextDue, onRetake }: { record: S
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-xs text-faint">Our therapist network is launching soon. You can also show these results to your doctor.</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button onClick={openCrisis} className="rounded-full border border-rose/50 px-4 py-2 text-sm text-rose transition hover:bg-rose/10">
+              Open help now
+            </button>
+            <Link href="/app/safety" className="rounded-full border border-white/15 px-4 py-2 text-sm transition hover:border-white/35">
+              Write my safety plan →
+            </Link>
+          </div>
+          <p className="mt-3 text-xs text-faint">A safety plan takes 5 minutes now and is one tap away later, even offline. Our therapist network is launching soon, and you can also show these results to your doctor.</p>
         </div>
       )}
 

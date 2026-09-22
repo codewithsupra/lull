@@ -177,6 +177,7 @@ export async function DELETE() {
     insforge.database.from("care_plans").delete().not("id", "is", null), // cascades to meds + tasks
     insforge.database.from("push_subscriptions").delete().not("id", "is", null),
     insforge.database.from("care_profiles").delete().not("user_id", "is", null),
+    insforge.database.from("safety_plans").delete().not("user_id", "is", null),
   ]);
   const failed = results.find((r) => r.error);
   if (failed) {

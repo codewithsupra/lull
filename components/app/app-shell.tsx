@@ -7,6 +7,8 @@ import { signOut } from "@/app/actions/auth";
 import type { SessionUser } from "@/lib/insforge/server";
 import { PaywallHost } from "@/components/billing/paywall-host";
 import { fetchBilling } from "@/lib/billing-client";
+import { CrisisSheet } from "@/components/crisis/crisis-sheet";
+import { clearSafetyCache, openCrisis } from "@/lib/safety-client";
 
 const NAV = [
   { href: "/app", label: "Today", key: "T", icon: "◐" },
@@ -33,6 +35,11 @@ export function AppShell({ user, children }: { user: SessionUser | null; childre
   }, [router]);
 
   const [pro, setPro] = useState<boolean | null>(null);
+  useEffect(() => {
+    // Registered for everyone so the offline crisis page is always available.
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
+    if (!user) clearSafetyCache();
+  }, [user]);
   useEffect(() => {
     if (!user) return;
     fetchBilling()
@@ -67,6 +74,13 @@ export function AppShell({ user, children }: { user: SessionUser | null; childre
               </Link>
             ))}
           </nav>
+          <button
+            onClick={openCrisis}
+            className="rounded-full border border-rose/50 px-3 py-1 text-xs font-semibold text-rose transition hover:bg-rose/10"
+            aria-label="Get help now"
+          >
+            Help now
+          </button>
           {user ? (
             <form action={signOut} className="flex items-center gap-3">
               {pro === false && (
@@ -86,6 +100,7 @@ export function AppShell({ user, children }: { user: SessionUser | null; childre
 
       <main className="mx-auto max-w-6xl px-4 pb-32 pt-8 sm:px-6 md:pb-16">{children}</main>
       <PaywallHost />
+      <CrisisSheet />
 
       {/* mobile tab bar */}
       <nav className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-6 rounded-2xl border border-white/10 bg-bg/80 p-1.5 backdrop-blur-xl md:hidden">
