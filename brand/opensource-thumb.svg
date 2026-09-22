@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 627">
+  <defs>
+    <radialGradient id="bg" cx="80%" cy="0%" r="90%"><stop offset="0" stop-color="#1b2a66"/><stop offset="1" stop-color="#03050b"/></radialGradient>
+    <linearGradient id="ink" x1="0" x2="1"><stop offset="0" stop-color="#8ef5d4"/><stop offset="1" stop-color="#6aa6ff"/></linearGradient>
+  </defs>
+  <rect width="1200" height="627" fill="url(#bg)"/>
+  <g font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+    <text x="80" y="110" fill="#8b95aa" font-size="24" letter-spacing="4">OPEN-SOURCE WORK</text>
+    <text x="80" y="185" fill="#e8edf7" font-size="58" font-weight="700">Software that keeps working</text>
+    <text x="80" y="255" fill="url(#ink)" font-size="58" font-weight="700">when things go wrong.</text>
+
+    <g font-size="30">
+      <circle cx="92" cy="344" r="7" fill="#c8ff6e"/>
+      <text x="118" y="354" fill="#e8edf7"><tspan font-weight="700">Tiptap</tspan><tspan fill="#8b95aa" dx="14">· &#160;2 merged PRs to a 38K-star editor</tspan></text>
+      <circle cx="92" cy="404" r="7" fill="#8ef5d4"/>
+      <text x="118" y="414" fill="#e8edf7"><tspan font-weight="700">Durable Agent Engine</tspan><tspan fill="#8b95aa" dx="14">· &#160;survived 187 random crashes</tspan></text>
+      <circle cx="92" cy="464" r="7" fill="#6aa6ff"/>
+      <text x="118" y="474" fill="#e8edf7"><tspan font-weight="700">Pantry Chef</tspan><tspan fill="#8b95aa" dx="14">· &#160;works even with JavaScript off</tspan></text>
+      <circle cx="92" cy="524" r="7" fill="#b79dff"/>
+      <text x="118" y="534" fill="#e8edf7"><tspan font-weight="700">Lull</tspan><tspan fill="#8b95aa" dx="14">· &#160;mental-health app, built solo</tspan></text>
+    </g>
+    <text x="1120" y="590" fill="#8b95aa" font-size="24" text-anchor="end">github.com/codewithsupra</text>
+  </g>
+</svg>

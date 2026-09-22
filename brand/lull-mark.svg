@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Lull">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="28%" r="80%">
+      <stop offset="0" stop-color="#16204f"/>
+      <stop offset="0.55" stop-color="#080c22"/>
+      <stop offset="1" stop-color="#03050b"/>
+    </radialGradient>
+    <radialGradient id="orb" cx="38%" cy="30%" r="75%">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.22" stop-color="#d4fff0"/>
+      <stop offset="0.5" stop-color="#8ef5d4"/>
+      <stop offset="0.8" stop-color="#6aa6ff"/>
+      <stop offset="1" stop-color="#4b5bff"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0.6" stop-color="#8ef5d4" stop-opacity="0.26"/>
+      <stop offset="1" stop-color="#6aa6ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="water" gradientUnits="userSpaceOnUse" x1="92" y1="0" x2="420" y2="0">
+      <stop offset="0" stop-color="#8ef5d4"/>
+      <stop offset="1" stop-color="#6aa6ff"/>
+    </linearGradient>
+    <clipPath id="sky">
+      <path d="M0 0 H512 V272 H420 C362 294 312 294 256 272 C200 250 150 250 92 272 H0 Z"/>
+    </clipPath>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <circle cx="256" cy="240" r="200" fill="url(#halo)"/>
+  <circle cx="256" cy="232" r="138" fill="url(#orb)" clip-path="url(#sky)"/>
+  <path d="M92 272 C150 250 200 250 256 272 C312 294 362 294 420 272" fill="none" stroke="url(#water)" stroke-width="14" stroke-linecap="round"/>
+  <g stroke="url(#water)" stroke-linecap="round">
+    <line x1="166" y1="324" x2="346" y2="324" stroke-width="14" opacity="0.8"/>
+    <line x1="206" y1="360" x2="306" y2="360" stroke-width="12" opacity="0.55"/>
+    <line x1="238" y1="392" x2="274" y2="392" stroke-width="10" opacity="0.35"/>
+  </g>
+  <path d="M378 92 C381 110 386 115 404 118 C386 121 381 126 378 144 C375 126 370 121 352 118 C370 115 375 110 378 92 Z" fill="#c8ff6e"/>
+</svg>
