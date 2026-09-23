@@ -16,7 +16,8 @@ const csp = [
   "base-uri 'self'",
   "form-action 'self' https://*.insforge.app https://accounts.google.com https://github.com",
   "object-src 'none'",
-  "upgrade-insecure-requests",
+  // Not in dev: it upgrades http://localhost subresources (e.g. /sw.js) and breaks them.
+  ...(isDev ? [] : ["upgrade-insecure-requests"]),
 ].join("; ");
 
 const securityHeaders = [

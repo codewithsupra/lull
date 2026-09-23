@@ -53,7 +53,7 @@ export const FREE_PLAN: Plan = {
   trial_available: true,
 };
 
-export type Feature = "scan" | "replan" | "insight" | "compose";
+export type Feature = "scan" | "replan" | "insight" | "compose" | "companion";
 
 /** Free tier keeps everything that matters for safety and a real first win. */
 export const FEATURES: Record<Feature, { free: false | number; pro: number; label: string }> = {
@@ -61,6 +61,7 @@ export const FEATURES: Record<Feature, { free: false | number; pro: number; labe
   replan: { free: false, pro: 5, label: "Adaptive weekly re-plans" },
   insight: { free: false, pro: 20, label: "AI pattern insights" },
   compose: { free: 3, pro: 15, label: "AI-composed sessions" },
+  companion: { free: 15, pro: 200, label: "Talk to Lull" },
 };
 
 /** Daily allowance for a feature on this plan; 0 means locked. */
@@ -70,6 +71,7 @@ export function allowance(plan: Pick<Plan, "pro">, feature: Feature): number {
 }
 
 export const PRO_PERKS = [
+  "Talk to Lull whenever you need to",
   "Scan your prescription into a plan",
   "Adaptive re-plans every week",
   "15 AI-composed sessions a day",
@@ -77,4 +79,4 @@ export const PRO_PERKS = [
   "Doctor report & full night garden (soon)",
 ];
 
-export const FREE_PERKS = ["Breathing, soundscapes & sleep timer", "Wellbeing check & care path", "Crisis tools, always", "Your Care Plan with XP & garden", "3 AI-composed sessions a day"];
+export const FREE_PERKS = ["Breathing, soundscapes & sleep timer", "Wellbeing check & care path", "Crisis tools, always", "Your Care Plan with XP & garden", "3 AI-composed sessions a day", "15 companion messages a day"];

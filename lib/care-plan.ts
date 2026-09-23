@@ -42,7 +42,7 @@ export function levelFor(xp: number) {
 export const SESSION_REF = /^(breathe:(coherent|box|478|sigh):(1|3|5|10)|sounds:(night-rain|low-tide|cabin-fire|deep-focus|temple)|compose)$/;
 
 export const CRISIS_TERMS =
-  /\b(suicid\w*|kill (?:my ?self|myself)|end (?:my|it all)|self[- ]?harm|hurt(?:ing)? myself|cut(?:ting)? myself|don'?t want to (?:live|be alive|wake up)|better off dead|overdos\w*)\b/i;
+  /\b(suicid\w*|kill (?:my ?self|myself)|end (?:it all|it|my life|things)|take my own life|self[- ]?harm|hurt(?:ing)? myself|cut(?:ting)? myself|don'?t want to (?:live|be alive|wake up)|better off dead|overdos\w*|all (?:my|the) pills)\b/i;
 
 const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
 

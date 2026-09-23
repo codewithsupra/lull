@@ -56,6 +56,7 @@ Next.js 16 App Router + React 19 + Tailwind v4, backed by InsForge (Postgres, au
 - **The `verify-unit` skill applies here**: after each unit of work run the tests, and if anything fails, locate it, find the root cause, fix it and re-run until green. Never weaken a test to make it pass.
 - Tests (`tests/`) cover pure logic only, aliasing `server-only` to `tests/stubs/` and injecting a throwaway `HEALTH_DATA_KEY` through `vitest.config.mts`. Signed-in end-to-end flows are verified manually in the browser.
 - The React compiler lint rules reject `setState` called synchronously in an effect body and impure calls during render — use a promise chain, a state initializer or a ref instead.
+- Service workers do not register in the in-app browser pane against `http://localhost`, even though the script serves correctly; verify anything SW-related (offline crisis page, push) on the deployed HTTPS URL.
 - `app/app/plan/preview/` is a dev-only visual harness with mock data (`notFound()` in production); use it to check the plan, check-in and garden UI without an account.
 - Requirements, milestones and acceptance criteria live in `docs/requirements.md`. `README.md` carries the product positioning and privacy model.
 

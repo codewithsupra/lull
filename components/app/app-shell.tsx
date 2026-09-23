@@ -13,6 +13,7 @@ import { clearSafetyCache, openCrisis } from "@/lib/safety-client";
 const NAV = [
   { href: "/app", label: "Today", key: "T", icon: "◐" },
   { href: "/app/plan", label: "Plan", key: "P", icon: "❀" },
+  { href: "/app/talk", label: "Talk", key: "K", icon: "◍" },
   { href: "/app/compose", label: "Compose", key: "C", icon: "✦" },
   { href: "/app/breathe", label: "Breathe", key: "B", icon: "◎" },
   { href: "/app/sounds", label: "Sounds", key: "S", icon: "∿" },
@@ -103,12 +104,12 @@ export function AppShell({ user, children }: { user: SessionUser | null; childre
       <CrisisSheet />
 
       {/* mobile tab bar */}
-      <nav className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-6 rounded-2xl border border-white/10 bg-bg/80 p-1.5 backdrop-blur-xl md:hidden">
+      <nav className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-7 rounded-2xl border border-white/10 bg-bg/80 p-1.5 backdrop-blur-xl md:hidden">
         {NAV.map((n) => (
           <Link
             key={n.href}
             href={n.href}
-            className={`flex flex-col items-center gap-0.5 rounded-xl py-2 text-[10px] transition ${
+            className={`flex flex-col items-center gap-0.5 rounded-xl py-2 text-[9px] transition ${
               isActive(n.href) ? "bg-white/10 text-ink" : "text-muted"
             }`}
           >
