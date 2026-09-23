@@ -34,7 +34,7 @@ export default function PlanPage() {
     return (
       <div className="mx-auto max-w-2xl py-10 text-center">
         <p className="mono-label !text-mint">care plan</p>
-        <h1 className="mt-3 font-[family-name:var(--font-unbounded)] text-3xl font-semibold tracking-tight sm:text-5xl">Your prescription, turned into a daily plan.</h1>
+        <h1 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-5xl">Your prescription, turned into a daily plan.</h1>
         <p className="mx-auto mt-4 max-w-lg text-muted">
           Scan your prescription or describe your diagnosis. Lull builds a private 4-week plan with your medicine schedule,
           habits, breathing and sound sessions, and learning, and every step you complete grows your night garden.

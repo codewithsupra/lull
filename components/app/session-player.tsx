@@ -100,7 +100,7 @@ export function SessionPlayer({ plan, canLog, onFinished }: { plan: Plan; canLog
       <div className="grid gap-8 p-6 sm:p-8 md:grid-cols-[1fr_280px] md:items-center">
         <div>
           <p className="mono-label !text-mint">composed for you</p>
-          <h2 className="mt-2 font-[family-name:var(--font-unbounded)] text-3xl font-semibold tracking-tight sm:text-4xl">{plan.title}</h2>
+          <h2 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-4xl">{plan.title}</h2>
           <div className="mt-4 flex flex-wrap gap-2 text-xs text-muted">
             <span className="rounded-full border border-white/10 px-2.5 py-1">◎ {pattern.name}</span>
             <span className="rounded-full border border-white/10 px-2.5 py-1">∿ {layers.join(" + ") || "Silence"}</span>

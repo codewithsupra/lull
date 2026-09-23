@@ -12,7 +12,7 @@ export function CrisisCard({ onContinue, message }: { onContinue: () => void; me
     <div role="alertdialog" aria-modal="true" aria-labelledby="crisis-title" className="fixed inset-0 z-[70] grid place-items-center bg-bg/85 p-4 backdrop-blur-xl">
       <div className="glass w-full max-w-md rounded-3xl p-7">
         <p className="mono-label !text-rose">you matter</p>
-        <h2 id="crisis-title" className="mt-2 font-[family-name:var(--font-unbounded)] text-2xl font-semibold">
+        <h2 id="crisis-title" className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold">
           It sounds like things are really heavy.
         </h2>
         <p className="mt-3 text-sm text-muted">

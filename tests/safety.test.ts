@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EMPTY_PLAN, SECTIONS, SafetyPlan, completedSections, isUsable } from "@/lib/safety";
+import { DICTIONARIES, LOCALES } from "@/lib/i18n";
 
 describe("safety plan schema", () => {
   it("defaults to an empty but valid plan", () => {
@@ -49,13 +50,18 @@ describe("usability signals", () => {
 });
 
 describe("sections", () => {
-  it("covers all seven Stanley-Brown steps with guidance", () => {
+  it("covers all seven Stanley-Brown steps", () => {
     expect(SECTIONS).toHaveLength(7);
-    for (const s of SECTIONS) {
-      expect(s.title.length).toBeGreaterThan(3);
-      expect(s.help.length).toBeGreaterThan(10);
-      expect(s.placeholder.length).toBeGreaterThan(3);
-    }
     expect(SECTIONS.filter((s) => s.contacts).map((s) => s.id)).toEqual(["people", "professionals"]);
+  });
+
+  // The clinical structure is language-free, so guidance must exist in every language we ship.
+  it.each(LOCALES)("has title, help and an example for every section in %s", (locale) => {
+    const copy = DICTIONARIES[locale].safety.sections;
+    for (const section of SECTIONS) {
+      expect(copy[section.id].title.length, `${locale}.${section.id}.title`).toBeGreaterThan(3);
+      expect(copy[section.id].help.length, `${locale}.${section.id}.help`).toBeGreaterThan(10);
+      expect(copy[section.id].placeholder.length, `${locale}.${section.id}.placeholder`).toBeGreaterThan(3);
+    }
   });
 });

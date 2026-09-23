@@ -223,7 +223,7 @@ export function ParticleField() {
     camera.position.set(0, 0.2, 7);
 
     const geo = new THREE.BufferGeometry();
-    const fontFamily = getComputedStyle(document.documentElement).getPropertyValue("--font-unbounded").trim() || "sans-serif";
+    const fontFamily = getComputedStyle(document.documentElement).getPropertyValue("--font-display").trim() || "sans-serif";
     const builders = [galaxy, sphere, ocean, helix, moon];
     for (let s = 0; s < SHAPES; s++) {
       const arr = new Float32Array(N * 3);

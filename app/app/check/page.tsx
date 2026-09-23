@@ -37,7 +37,7 @@ export default function CheckPage() {
     return (
       <div className="mx-auto max-w-xl py-12 text-center">
         <p className="mono-label !text-mint">wellbeing check</p>
-        <h1 className="mt-3 font-[family-name:var(--font-unbounded)] text-3xl font-semibold">Know where you are. Get the right support.</h1>
+        <h1 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-semibold">Know where you are. Get the right support.</h1>
         <p className="mt-4 text-muted">A 3-minute, clinically validated check (PHQ-9 and GAD-7) that points you to the right level of support. It&apos;s private and encrypted.</p>
         <Link href="/login?mode=signup" className="mt-8 inline-block rounded-full bg-mint px-7 py-3 text-sm font-semibold text-bg">
           Create a free account
@@ -79,7 +79,7 @@ export default function CheckPage() {
         </div>
       )}
       <p className="mono-label !text-mint">wellbeing check · 3 minutes</p>
-      <h1 className="mt-3 font-[family-name:var(--font-unbounded)] text-3xl font-semibold tracking-tight sm:text-5xl">How have the last two weeks been?</h1>
+      <h1 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-5xl">How have the last two weeks been?</h1>
       <p className="mt-4 text-muted">
         20 quick questions using the PHQ-9 and GAD-7, the same questionnaires doctors use worldwide. Your answers shape your care path and your plan.
         We ask again every two weeks so you can see real progress.

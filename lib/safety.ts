@@ -31,51 +31,19 @@ export const EMPTY_PLAN: SafetyPlan = SafetyPlan.parse({});
 
 export type SectionId = keyof Omit<SafetyPlan, "country">;
 
-export const SECTIONS: { id: SectionId; title: string; help: string; placeholder: string; contacts?: boolean }[] = [
-  {
-    id: "warning_signs",
-    title: "My early warning signs",
-    help: "Thoughts, feelings or situations that tell you a hard patch is starting. Spotting them early is the whole point.",
-    placeholder: "e.g. I stop replying to messages",
-  },
-  {
-    id: "coping",
-    title: "Things I can do on my own",
-    help: "Small actions that have helped before, without needing anyone else.",
-    placeholder: "e.g. 4-7-8 breathing for 5 minutes",
-  },
-  {
-    id: "distractions",
-    title: "People and places that take my mind off it",
-    help: "Company or surroundings that shift your state, even a little.",
-    placeholder: "e.g. walk to the park near home",
-  },
-  {
-    id: "people",
-    title: "People I can ask for help",
-    help: "Who you'd actually call at 2am. Add a number so it's one tap when you need it.",
-    placeholder: "e.g. Ravi (brother)",
-    contacts: true,
-  },
-  {
-    id: "professionals",
-    title: "Professionals and services",
-    help: "Your doctor, therapist or a helpline you trust.",
-    placeholder: "e.g. Dr. Mehta, psychiatrist",
-    contacts: true,
-  },
-  {
-    id: "safer",
-    title: "Making my space safer",
-    help: "Steps that put distance between you and anything you could use to hurt yourself.",
-    placeholder: "e.g. leave my medicines with my flatmate",
-  },
-  {
-    id: "reasons",
-    title: "My reasons to keep going",
-    help: "People, plans, places, anything. This is the section people say helps most.",
-    placeholder: "e.g. my sister's wedding next year",
-  },
+/**
+ * Section order and shape only. The titles, help text and examples live in the dictionary
+ * (`t.safety.sections`) so this stays language-free — the clinical structure is the same in
+ * every language, the words are not.
+ */
+export const SECTIONS: { id: SectionId; contacts?: boolean }[] = [
+  { id: "warning_signs" },
+  { id: "coping" },
+  { id: "distractions" },
+  { id: "people", contacts: true },
+  { id: "professionals", contacts: true },
+  { id: "safer" },
+  { id: "reasons" },
 ];
 
 /** A plan is useful once it has a coping step and either a person or a professional. */

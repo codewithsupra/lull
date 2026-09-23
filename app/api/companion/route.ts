@@ -6,17 +6,19 @@ import { requireFeature } from "@/lib/billing-server";
 import { decrypt, decryptJson, encrypt } from "@/lib/crypto";
 import {
   CONTEXT_TURNS,
-  CRISIS_REPLY,
   CompanionInput,
   EMPTY_CONTEXT,
-  MEDICAL_BOUNDARY,
-  SYSTEM_PROMPT,
   classify,
   contextBriefing,
+  crisisReply,
+  medicalBoundary,
+  systemPrompt,
   type CompanionContext,
   type CompanionMessage,
   type Role,
 } from "@/lib/companion";
+import { getLocale } from "@/lib/i18n/server";
+import { messagesFor, tagFor, fmt } from "@/lib/i18n";
 import type { Outline } from "@/lib/care-plan";
 import type { ScreenerRecord } from "@/lib/screeners";
 import { logError, logEvent } from "@/lib/log";
@@ -40,7 +42,7 @@ const save = (insforge: ServerClient, role: Role, content: string, risk = false)
   insforge.database.from("companion_messages").insert([{ role, content_enc: encrypt(content), risk }]);
 
 /** Assembles the user's situation server-side from encrypted rows. Aggregates only. */
-async function buildContext(insforge: ServerClient, name: string | null): Promise<CompanionContext> {
+async function buildContext(insforge: ServerClient, name: string | null, tag: string): Promise<CompanionContext> {
   const today = new Date().toISOString().slice(0, 10);
   const [plans, screeners, moods, safety, profile, tasks] = await Promise.all([
     insforge.database.from("care_plans").select("outline_enc, week_index").eq("status", "active").limit(1),
@@ -79,7 +81,7 @@ async function buildContext(insforge: ServerClient, name: string | null): Promis
   const tz = (profile.data as { timezone: string }[] | null)?.[0]?.timezone;
   if (tz) {
     try {
-      ctx.localTime = new Date().toLocaleTimeString("en-US", { timeZone: tz, hour: "numeric", minute: "2-digit" });
+      ctx.localTime = new Date().toLocaleTimeString(tag, { timeZone: tz, hour: "numeric", minute: "2-digit" });
     } catch {}
   }
   return ctx;
@@ -94,7 +96,8 @@ export async function GET() {
     return NextResponse.json({ messages });
   } catch (err) {
     logError("companion.history.failed", err, { user: auth.userId });
-    return NextResponse.json({ error: "Couldn't load your conversation." }, { status: 500 });
+    const t = messagesFor(await getLocale());
+    return NextResponse.json({ error: t.companion.errors.loadFailed }, { status: 500 });
   }
 }
 
@@ -105,7 +108,8 @@ export async function DELETE() {
   const { error } = await auth.insforge.database.from("companion_messages").delete().not("id", "is", null);
   if (error) {
     logError("companion.forget.failed", error, { user: auth.userId });
-    return NextResponse.json({ error: "Couldn't clear your conversation." }, { status: 500 });
+    const t = messagesFor(await getLocale());
+    return NextResponse.json({ error: t.companion.errors.clearFailed }, { status: 500 });
   }
   logEvent("companion.forgotten", { user: auth.userId });
   return NextResponse.json({ ok: true });
@@ -116,39 +120,47 @@ export async function POST(request: NextRequest) {
   if ("error" in auth) return auth.error;
   const { insforge, userId } = auth;
 
+  const locale = await getLocale();
+  const t = messagesFor(locale);
+
   const parsed = CompanionInput.safeParse(await request.json().catch(() => ({})));
-  if (!parsed.success) return NextResponse.json({ error: "Type a little more and I'll listen." }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: t.companion.errors.tooShort }, { status: 400 });
   const { message } = parsed.data;
 
   // Safety first, and deliberately before any quota or paywall check: someone in crisis
   // must never be blocked by a limit, and the model is not asked to handle it.
   const verdict = classify(message);
   if (verdict.kind === "crisis") {
+    const reply = crisisReply(locale);
     await save(insforge, "user", message, true);
-    await save(insforge, "assistant", CRISIS_REPLY, true);
-    logEvent("companion.crisis_handoff", { user: userId });
-    return NextResponse.json({ reply: CRISIS_REPLY, crisis: true });
+    await save(insforge, "assistant", reply, true);
+    logEvent("companion.crisis_handoff", { user: userId, locale });
+    return NextResponse.json({ reply, crisis: true });
   }
 
   const gate = await requireFeature(insforge, "companion");
   if ("error" in gate) return gate.error;
   if (!(await withinLimit(insforge, "companion", gate.limit))) {
     return gate.plan.pro
-      ? NextResponse.json({ error: "We've talked a lot today. I'll be here tomorrow." }, { status: 429 })
-      : NextResponse.json({ error: `Free includes ${gate.limit} messages a day. Go Pro to keep talking.`, upgrade: true, feature: "companion" }, { status: 402 });
+      ? NextResponse.json({ error: t.companion.errors.dailyProLimit }, { status: 429 })
+      : NextResponse.json(
+          { error: fmt(t.companion.errors.dailyFreeLimit, { limit: gate.limit }), upgrade: true, feature: "companion" },
+          { status: 402 },
+        );
   }
 
   let stream: Awaited<ReturnType<typeof openrouter.chat.completions.create>>;
   try {
     const { data: me } = await insforge.auth.getCurrentUser();
     const profile = (me?.user as { profile?: { name?: string } } | undefined)?.profile;
-    const [ctx, past] = await Promise.all([buildContext(insforge, profile?.name ?? null), history(insforge, CONTEXT_TURNS)]);
+    const [ctx, past] = await Promise.all([buildContext(insforge, profile?.name ?? null, tagFor(locale)), history(insforge, CONTEXT_TURNS)]);
 
     const system = [
-      SYSTEM_PROMPT,
+      systemPrompt(locale),
+      // The briefing stays in English: it is instructions to the model, never shown to the user.
       `\nWhat you know about them: ${contextBriefing(ctx)}`,
       verdict.kind === "medical"
-        ? `\nThis turn asks for medication or diagnosis advice. Your reply MUST begin with exactly this text, then continue naturally:\n"""${MEDICAL_BOUNDARY}"""`
+        ? `\nThis turn asks for medication or diagnosis advice. Your reply MUST begin with exactly this text, then continue naturally:\n"""${medicalBoundary(locale)}"""`
         : "",
     ].join("\n");
 
@@ -162,7 +174,7 @@ export async function POST(request: NextRequest) {
     } as unknown as ChatCompletionCreateParamsStreaming);
   } catch (err) {
     logError("companion.stream.failed", err, { user: userId });
-    return NextResponse.json({ error: "I lost my train of thought. Try again?" }, { status: 502 });
+    return NextResponse.json({ error: t.companion.errors.lost }, { status: 502 });
   }
 
   await save(insforge, "user", message);
@@ -180,10 +192,10 @@ export async function POST(request: NextRequest) {
           full += delta;
           send("delta", delta);
         }
-        if (!full.trim()) full = "I'm here. Tell me a bit more about what's going on.";
+        if (!full.trim()) full = t.companion.fallbackReply;
         await save(insforge, "assistant", full);
         send("done", { medical: verdict.kind === "medical" });
-        logEvent("companion.reply", { user: userId, chars: full.length, medical: verdict.kind === "medical" });
+        logEvent("companion.reply", { user: userId, chars: full.length, medical: verdict.kind === "medical", locale });
       } catch (err) {
         logError("companion.stream.interrupted", err, { user: userId });
         if (full.trim()) {
@@ -191,7 +203,7 @@ export async function POST(request: NextRequest) {
             await save(insforge, "assistant", full);
           } catch {}
         }
-        send("error", { error: "My reply got cut off. Try again?" });
+        send("error", { error: t.companion.errors.cutOff });
       } finally {
         controller.close();
       }

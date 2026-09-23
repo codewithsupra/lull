@@ -83,7 +83,7 @@ function DemoRun({ demo, onDone }: { demo: (typeof DEMOS)[number]; onDone: () =>
         }`}
       >
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h4 className="font-[family-name:var(--font-unbounded)] text-lg font-semibold">{demo.title}</h4>
+          <h4 className="font-[family-name:var(--font-display)] text-lg font-semibold">{demo.title}</h4>
           <span className="mono-label text-mint">composed in 2.1s</span>
         </div>
         <div className="mt-3 flex flex-wrap gap-2 text-xs">

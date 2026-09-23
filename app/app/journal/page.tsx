@@ -68,7 +68,7 @@ export default function JournalPage() {
   if (!user) {
     return (
       <div className="space-y-6">
-        <h1 className="font-[family-name:var(--font-unbounded)] text-4xl font-semibold tracking-tight">Journal</h1>
+        <h1 className="font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight">Journal</h1>
         <GuestNote>Your mood journal and AI insights live in your account.</GuestNote>
       </div>
     );
@@ -79,7 +79,7 @@ export default function JournalPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="mono-label">journal</p>
-          <h1 className="mt-2 font-[family-name:var(--font-unbounded)] text-4xl font-semibold tracking-tight sm:text-5xl">Your weather.</h1>
+          <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight sm:text-5xl">Your weather.</h1>
         </div>
         <button
           onClick={reflect}
@@ -94,7 +94,7 @@ export default function JournalPage() {
       {insight && (
         <div className="glass animate-[fadeIn_0.7s_ease] rounded-3xl border-lilac/20 p-7">
           <p className="mono-label !text-lilac">insight</p>
-          <h2 className="mt-2 font-[family-name:var(--font-unbounded)] text-2xl font-semibold">{insight.headline}</h2>
+          <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold">{insight.headline}</h2>
           <ul className="mt-4 space-y-2 text-muted">
             {insight.observations.map((o) => (
               <li key={o} className="flex gap-3"><span className="text-lilac">·</span>{o}</li>
@@ -113,7 +113,7 @@ export default function JournalPage() {
         </div>
         <div className="glass space-y-5 rounded-3xl p-6">
           <div>
-            <div className="font-[family-name:var(--font-unbounded)] text-3xl font-semibold text-mint">{avg ? avg.toFixed(1) : "–"}</div>
+            <div className="font-[family-name:var(--font-display)] text-3xl font-semibold text-mint">{avg ? avg.toFixed(1) : "–"}</div>
             <div className="mono-label !text-[10px]">average mood</div>
           </div>
           <div>

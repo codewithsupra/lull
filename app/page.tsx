@@ -49,7 +49,7 @@ export default async function Home() {
           <h1 className="wordmark select-none px-[0.14em] text-[clamp(7rem,30vw,24rem)]">lull</h1>
         </Reveal>
         <Reveal delay={0.15}>
-          <p className="mt-6 font-[family-name:var(--font-unbounded)] text-3xl font-semibold tracking-tight sm:text-5xl">
+          <p className="mt-6 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-5xl">
             Calm, composed for you.
           </p>
         </Reveal>
@@ -83,7 +83,7 @@ export default async function Home() {
         <Reveal className="glass mx-auto max-w-5xl rounded-3xl p-7 sm:p-12">
           <div className="grid gap-10 md:grid-cols-[1.3fr_1fr] md:items-center">
             <div>
-              <h2 className="font-[family-name:var(--font-unbounded)] text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">
+              <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">
                 Everything you need to come back to yourself.
               </h2>
               <p className="mt-5 max-w-lg text-muted">
@@ -113,7 +113,7 @@ export default async function Home() {
         <div className="px-4 pb-32">
           <Reveal className="glass mx-auto max-w-3xl rounded-3xl p-7 sm:p-10">
             <p className="mono-label !text-lime">try it · right here</p>
-            <h2 className="mt-3 font-[family-name:var(--font-unbounded)] text-2xl font-semibold tracking-tight sm:text-4xl">
+            <h2 className="mt-3 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight sm:text-4xl">
               Sound, synthesized as you listen.
             </h2>
             <p className="mt-4 max-w-xl text-muted">
@@ -132,7 +132,7 @@ export default async function Home() {
         <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-2 md:items-center">
           <Reveal>
             <p className="mono-label !text-mint">the headline feature</p>
-            <h2 className="mt-3 font-[family-name:var(--font-unbounded)] text-4xl font-semibold leading-[1.05] tracking-tight sm:text-6xl">
+            <h2 className="mt-3 font-[family-name:var(--font-display)] text-4xl font-semibold leading-[1.05] tracking-tight sm:text-6xl">
               One sentence in. A whole session out.
             </h2>
             <p className="mt-6 max-w-md text-muted">
@@ -152,7 +152,7 @@ export default async function Home() {
       {/* COMPARE */}
       <section data-shape="4" className="relative px-4 py-32">
         <Reveal className="glass mx-auto max-w-4xl rounded-3xl p-7 sm:p-12">
-          <h2 className="font-[family-name:var(--font-unbounded)] text-3xl font-semibold tracking-tight sm:text-5xl">
+          <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-5xl">
             A calmer take on calm.
           </h2>
           <div className="mt-10 overflow-hidden rounded-2xl border border-white/10">
@@ -173,7 +173,7 @@ export default async function Home() {
       {/* CTA */}
       <section data-shape="5" className="relative flex min-h-[110dvh] flex-col items-center justify-end px-4 pb-10 text-center">
         <Reveal>
-          <h2 className="font-[family-name:var(--font-unbounded)] text-4xl font-semibold tracking-tight sm:text-6xl">
+          <h2 className="font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight sm:text-6xl">
             Unwind in under a minute.
           </h2>
           <p className="mx-auto mt-4 max-w-md text-muted">

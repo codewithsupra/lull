@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { CRISIS_TERMS } from "@/lib/care-plan";
+import { isHarmText } from "@/lib/crisis-terms";
+import { DEFAULT_LOCALE, messagesFor, type Locale } from "@/lib/i18n";
 
 /**
  * "Talk to Lull" companion (FR2): CBT/ACT-grounded chat with a safety layer in front of it.
@@ -26,10 +27,6 @@ export type SafetyVerdict =
   | { kind: "medical" }
   | { kind: "ok" };
 
-/** Someone is being harmed, by themselves or by another person. */
-const HARM_OTHERS =
-  /\b(kill|hurt|harm|stab|shoot)\s+(him|her|them|someone|somebody|my|people)\b|\b(being|getting)\s+(abused|beaten|raped|assaulted)\b|\b(?:he|she|they|someone|my\s+\w+)\s+(?:hits?|beats?|punches|abuses?|hurts)\s+me\b/i;
-
 /**
  * Prescribing questions are intent + action + something medicine-shaped.
  * The last alternative catches real drug names by their common endings, because no
@@ -48,27 +45,36 @@ const PRESCRIBE_ASK =
   /\b(prescribe|write me a prescription|prescription for)\b|\b(what|anything|something)\b[^.?!]*\b(take|try|use)\b[^.?!]*\bfor\b[^.?!]*\b(sleep|sleeping|anxiety|depression|panic|stress|insomnia|adhd|focus)\b/i;
 
 /**
+ * The same boundaries in Hindi and Hinglish. Hindi is matched on phrases rather than with `\b`,
+ * which JavaScript defines only over Latin word characters.
+ */
+const MED_ASK_HI =
+  /(दवा|दवाई|दवाएँ|गोली|गोलियां|गोलियाँ|खुराक|ख़ुराक|डोज़|डोज)[^।?!]*(लूँ|लूं|लेनी|लेना|बंद|बदल|बढ़ा|कम|छोड़|शुरू|दुगुन|दोगुन|कितनी|कौन)|(कितनी|कौन सी|कौनसी|क्या)[^।?!]*(दवा|दवाई|गोली|खुराक|डोज़)|(मुझे|मेरे को)[^।?!]*(डिप्रेशन|एंग्जायटी|चिंता रोग|बाइपोलर|एडीएचडी|ओसीडी|बीमारी)[^।?!]*(है|हो गया|हुआ है)\?|कौन सी बीमारी|क्या बीमारी है|कोई सप्लीमेंट/;
+
+const MED_ASK_HI_LATIN =
+  /\b(dawa|dawai|davai|goli|goliyan|khurak|khuraak|dose|doz)\b[^.?!]*\b(lu|loon|leni|lena|band|badal|badha|kam|chhod|shuru|dugun|kitni|kaunsi|kaun si)\b|\b(kitni|kaunsi|kaun si|kya)\b[^.?!]*\b(dawa|dawai|goli|khurak|dose)\b|\bmujhe\b[^.?!]*\b(depression|anxiety|bipolar|adhd|ocd|bimari)\b[^.?!]*\bhai\b|\bkoi supplement\b/i;
+
+/**
  * Screens a user turn before the model sees it.
  * Crisis wins over everything else: the companion never counsels a crisis alone.
  */
 export function classify(text: string): SafetyVerdict {
-  if (CRISIS_TERMS.test(text) || HARM_OTHERS.test(text)) return { kind: "crisis" };
+  // Language-independent by design: a Hindi-speaking user may type English and vice versa.
+  if (isHarmText(text)) return { kind: "crisis" };
   const prescribing = MED_INTENT.test(text) && MED_ACTION.test(text) && MED_NOUN.test(text);
-  if (prescribing || DIAGNOSIS_ASK.test(text) || MED_DOSE_ASK.test(text) || PRESCRIBE_ASK.test(text)) return { kind: "medical" };
+  const askedInHindi = MED_ASK_HI.test(text) || MED_ASK_HI_LATIN.test(text);
+  if (prescribing || askedInHindi || DIAGNOSIS_ASK.test(text) || MED_DOSE_ASK.test(text) || PRESCRIBE_ASK.test(text)) return { kind: "medical" };
   return { kind: "ok" };
 }
 
-/** Fixed reply used when a turn is classified as a crisis. No model call is made. */
-export const CRISIS_REPLY = `I'm really glad you told me. What you're carrying sounds heavy, and I don't want you to sit with it alone right now.
-
-I'm not the right kind of help for this moment — a person is. I've opened your crisis options: a free 24/7 helpline, your safety plan, and the people you listed. Please reach out to one of them now, or call your local emergency number if you're in danger.
-
-I'll still be here afterwards. If it helps while you reach out, we can breathe together for 60 seconds.`;
+/**
+ * Fixed reply used when a turn is classified as a crisis. No model call is made, so the words a
+ * person in crisis reads are always reviewed copy — in their own language.
+ */
+export const crisisReply = (locale: Locale = DEFAULT_LOCALE): string => messagesFor(locale).companion.crisisReply;
 
 /** Boundary reply for prescribing questions. The model continues from here. */
-export const MEDICAL_BOUNDARY = `I can't give advice about medicines, doses or diagnoses — only your doctor or psychiatrist can do that safely, and I'd be guessing.
-
-What I can do: help you write down exactly what you want to ask them, and support you with how you're feeling in the meantime.`;
+export const medicalBoundary = (locale: Locale = DEFAULT_LOCALE): string => messagesFor(locale).companion.medicalBoundary;
 
 // ---------- context assembly ----------
 
@@ -129,7 +135,7 @@ export function contextBriefing(c: CompanionContext): string {
   return bits.join(" ");
 }
 
-export const SYSTEM_PROMPT = `You are Lull, a warm, steady companion inside a mental-health app. You are not a therapist, doctor or human, and you say so plainly if asked.
+const BASE_PROMPT = `You are Lull, a warm, steady companion inside a mental-health app. You are not a therapist, doctor or human, and you say so plainly if asked.
 
 How you talk:
 - Short. Two to four sentences, like a calm friend who knows CBT. Never lecture, never bullet-point at someone in distress.
@@ -158,12 +164,19 @@ Hard rules, no exceptions:
 - If they mention suicide, self-harm, or being in danger, stop the coaching, say you're glad they told you, and point them to real human help immediately.
 - If something is outside your scope (legal, financial, medical), say so briefly and stay with the feeling instead.`;
 
+/**
+ * Language rules. Two things matter: the reply must be readable by this user, and it must not
+ * drift into the stiff, Sanskritised Hindi of official forms — which reads as cold at 3am.
+ * Mirroring the language the person actually typed in beats following the app setting.
+ */
+const LANGUAGE_RULE: Record<Locale, string> = {
+  en: "Write in English. Mirror the person's own language if they write in another one.",
+  hi: `Write in Hindi, in Devanagari script, using everyday spoken Hindi — the Hindi people text in, not the formal Hindi of government forms. Keep the English words that Hindi speakers normally use themselves (for example "stress", "panic attack", "mood", "app"); do not hunt for pure Hindi substitutes that nobody says out loud. Do not romanise Hindi.
+If the person writes to you in English, reply in English. If they write in romanised Hinglish, reply in simple Hindi in Devanagari unless they ask otherwise.`,
+};
+
+/** The full system prompt for a locale. */
+export const systemPrompt = (locale: Locale = DEFAULT_LOCALE): string => `${BASE_PROMPT}\n\nLanguage:\n${LANGUAGE_RULE[locale]}`;
+
 /** Suggestion chips shown when the thread is empty. */
-export const STARTERS = [
-  "I can't switch my brain off",
-  "I keep putting everything off",
-  "I'm anxious about tomorrow",
-  "I feel flat and I don't know why",
-  "Help me get out of bed",
-  "I had a panic moment today",
-];
+export const starters = (locale: Locale = DEFAULT_LOCALE): readonly string[] => messagesFor(locale).companion.starters;

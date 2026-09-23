@@ -52,7 +52,7 @@ export function Pricing({ feature, compact, onPlan }: { feature?: Feature; compa
           {FEATURES[feature].label} is part of Lull Pro
         </p>
       )}
-      <h2 className={`mt-2 font-[family-name:var(--font-unbounded)] font-semibold tracking-tight ${compact ? "text-2xl" : "text-3xl sm:text-5xl"}`}>Go deeper with Lull Pro.</h2>
+      <h2 className={`mt-2 font-[family-name:var(--font-display)] font-semibold tracking-tight ${compact ? "text-2xl" : "text-3xl sm:text-5xl"}`}>Go deeper with Lull Pro.</h2>
       <p className="mt-3 max-w-lg text-muted">Less than a coffee a week. Your subscription keeps Lull private, safe and ad-free.</p>
 
       <div className="mt-6 inline-grid grid-cols-2 rounded-full border border-white/10 p-1 text-sm">
@@ -67,7 +67,7 @@ export function Pricing({ feature, compact, onPlan }: { feature?: Feature; compa
         {!compact && (
           <div className="rounded-3xl border border-white/10 p-6">
             <p className="mono-label">Free, forever</p>
-            <p className="mt-2 font-[family-name:var(--font-unbounded)] text-3xl font-semibold">{billing?.currency === "inr" ? "₹0" : "$0"}</p>
+            <p className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold">{billing?.currency === "inr" ? "₹0" : "$0"}</p>
             <ul className="mt-5 space-y-2 text-sm text-muted">
               {FREE_PERKS.map((p) => (
                 <li key={p}>✓ {p}</li>
@@ -78,7 +78,7 @@ export function Pricing({ feature, compact, onPlan }: { feature?: Feature; compa
         <div className="relative overflow-hidden rounded-3xl border border-lime/30 bg-gradient-to-b from-lime/[0.08] to-transparent p-6 shadow-[0_0_60px_-20px_var(--lime)]">
           <p className="mono-label !text-lime">Pro</p>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="font-[family-name:var(--font-unbounded)] text-3xl font-semibold">{price?.label ?? "…"}</span>
+            <span className="font-[family-name:var(--font-display)] text-3xl font-semibold">{price?.label ?? "…"}</span>
             <span className="text-sm text-muted">/{interval === "month" ? "month" : "year"}</span>
           </div>
           {interval === "year" && price && monthly && <p className="mt-1 text-xs text-lime">That&apos;s {price.perMonth}, billed yearly</p>}

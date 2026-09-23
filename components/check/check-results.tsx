@@ -76,7 +76,7 @@ export function CheckResults({ record, history, nextDue, onRetake }: { record: S
         <p className="mono-label relative" style={{ color: accent }}>
           your care path · {tier.name}
         </p>
-        <h1 className="relative mt-2 font-[family-name:var(--font-unbounded)] text-2xl font-semibold leading-tight sm:text-4xl">{tier.headline}</h1>
+        <h1 className="relative mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold leading-tight sm:text-4xl">{tier.headline}</h1>
         <p className="relative mt-4 max-w-xl text-muted">{tier.next}</p>
         <ul className="relative mt-4 space-y-1 text-xs text-faint">
           {record.reasons.map((r) => (

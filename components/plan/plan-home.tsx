@@ -133,7 +133,7 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
               initial={{ opacity: 0, y: 20, scale: 0.8 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -30 }}
-              className="rounded-full border border-lime/40 bg-bg/80 px-4 py-1.5 font-[family-name:var(--font-unbounded)] text-sm font-semibold text-lime shadow-[0_0_40px_-6px_var(--lime)] backdrop-blur"
+              className="rounded-full border border-lime/40 bg-bg/80 px-4 py-1.5 font-[family-name:var(--font-display)] text-sm font-semibold text-lime shadow-[0_0_40px_-6px_var(--lime)] backdrop-blur"
             >
               {b.text}
             </motion.div>
@@ -146,12 +146,12 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
           <p className="mono-label !text-mint">
             {category?.label} · week {plan.week} of 4{theme ? ` · ${theme.theme}` : ""}
           </p>
-          <h1 className="mt-2 font-[family-name:var(--font-unbounded)] text-3xl font-semibold tracking-tight sm:text-5xl">{plan.title}</h1>
+          <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-5xl">{plan.title}</h1>
           <p className="mt-3 max-w-xl text-muted">{plan.summary}</p>
         </div>
         <div className="glass w-full rounded-2xl p-5 sm:w-72">
           <div className="flex items-baseline justify-between">
-            <span className="font-[family-name:var(--font-unbounded)] text-lg font-semibold">
+            <span className="font-[family-name:var(--font-display)] text-lg font-semibold">
               Lv {lvl.level} · {lvl.name}
             </span>
             <span className="font-mono text-xs text-lime">{xp} XP</span>
@@ -207,7 +207,7 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
       <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
         <section>
           <div className="flex items-baseline justify-between">
-            <h2 className="font-[family-name:var(--font-unbounded)] text-2xl font-semibold">Today</h2>
+            <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold">Today</h2>
             <span className="font-mono text-xs text-muted">
               {done}/{tasks.length} done
             </span>

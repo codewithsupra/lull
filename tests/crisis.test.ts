@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { COUNTRY_OPTIONS, GLOBAL_LINE, REGIONS, crisisLinesFor, lineHref, regionFor } from "@/lib/crisis";
+import { GLOBAL_LINE, REGIONS, countryOptions, crisisLinesFor, lineHref, regionFor } from "@/lib/crisis";
+import { DICTIONARIES, LOCALES, LOCALE_META, messagesFor } from "@/lib/i18n";
 
 describe("crisis directory data", () => {
   it("has no duplicate countries", () => {
@@ -85,8 +86,20 @@ describe("lineHref", () => {
 });
 
 describe("country picker", () => {
-  it("lists every region alphabetically", () => {
-    expect(COUNTRY_OPTIONS).toHaveLength(REGIONS.length);
-    expect(COUNTRY_OPTIONS.map((c) => c.label)).toEqual([...COUNTRY_OPTIONS.map((c) => c.label)].sort());
+  it.each(LOCALES)("lists every region, alphabetically in %s", (locale) => {
+    const options = countryOptions(messagesFor(locale), LOCALE_META[locale].tag);
+    expect(options).toHaveLength(REGIONS.length);
+    const labels = options.map((o) => o.label);
+    expect(labels).toEqual([...labels].sort((a, b) => a.localeCompare(b, LOCALE_META[locale].tag)));
+  });
+});
+
+describe("localisation", () => {
+  it.each(LOCALES)("names every country and helpline note in %s", (locale) => {
+    const t = DICTIONARIES[locale].crisis;
+    for (const region of REGIONS) {
+      expect(t.countries[region.country], `${locale} name for ${region.country}`).toBeTruthy();
+      for (const line of region.lines) if (line.note) expect(t.notes[line.note], `${locale} note ${line.note}`).toBeTruthy();
+    }
   });
 });

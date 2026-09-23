@@ -127,7 +127,7 @@ export function SoundsClient({ initialPreset, taskId }: { initialPreset?: string
           <canvas ref={canvasRef} width={1040} height={1040} className="aspect-square w-full" />
           <div className="absolute inset-0 grid place-items-center text-center">
             <div>
-              <div className="font-[family-name:var(--font-unbounded)] text-2xl font-semibold">{playing ? "Listening" : "Silence"}</div>
+              <div className="font-[family-name:var(--font-display)] text-2xl font-semibold">{playing ? "Listening" : "Silence"}</div>
               <div className="mono-label mt-2">
                 {shownLeft !== null
                   ? `fades out in ${Math.floor(Math.max(0, shownLeft) / 60)}:${String(Math.max(0, shownLeft) % 60).padStart(2, "0")}`

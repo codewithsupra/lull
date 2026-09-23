@@ -4,27 +4,39 @@
  * Numbers are free/24-7 national services unless noted.
  */
 
+import type { Messages } from "@/lib/i18n";
+
+/** Keys into `t.crisis.notes`, so a helpline's hours are never shown in the wrong language. */
+export type CrisisNoteKey = keyof Messages["crisis"]["notes"];
+
 export type CrisisLine = {
+  /** Organisation name — a proper noun, deliberately not translated. */
   name: string;
   /** Display number, dialled via tel: (digits only) or a url for web-only services. */
   number?: string;
   url?: string;
-  note?: string;
+  note?: CrisisNoteKey;
   /** Text/SMS rather than a voice call. */
   text?: boolean;
+  /** Set when the "name" is a phrase rather than an organisation, so it can be translated. */
+  nameKey?: "findHelpline";
 };
 
+export type CountryCode = keyof Messages["crisis"]["countries"];
+
 export type CrisisRegion = {
-  country: string;
+  country: CountryCode;
+  /** English name, used for logs and the build-time offline page. UI reads t.crisis.countries. */
   label: string;
   emergency: string;
   lines: CrisisLine[];
 };
 
 export const GLOBAL_LINE: CrisisLine = {
-  name: "Find a helpline in your country",
+  name: "findahelpline.com",
+  nameKey: "findHelpline",
   url: "https://findahelpline.com",
-  note: "Free, confidential support in 130+ countries",
+  note: "global",
 };
 
 export const REGIONS: CrisisRegion[] = [
@@ -33,10 +45,10 @@ export const REGIONS: CrisisRegion[] = [
     label: "India",
     emergency: "112",
     lines: [
-      { name: "Tele-MANAS (Govt. of India)", number: "14416", note: "Free, 24/7, in 20+ languages" },
-      { name: "KIRAN Mental Health Helpline", number: "1800 599 0019", note: "Free, 24/7" },
-      { name: "iCall (TISS)", number: "91529 87821", note: "Counselling, Mon–Sat 10am–8pm" },
-      { name: "AASRA", number: "98204 66726", note: "24/7 suicide prevention" },
+      { name: "Tele-MANAS (Govt. of India)", number: "14416", note: "free247Multi" },
+      { name: "KIRAN Mental Health Helpline", number: "1800 599 0019", note: "free247" },
+      { name: "iCall (TISS)", number: "91529 87821", note: "counsellingHours" },
+      { name: "AASRA", number: "98204 66726", note: "suicide247" },
     ],
   },
   {
@@ -44,9 +56,9 @@ export const REGIONS: CrisisRegion[] = [
     label: "United States",
     emergency: "911",
     lines: [
-      { name: "988 Suicide & Crisis Lifeline", number: "988", note: "Call or text, 24/7" },
-      { name: "Crisis Text Line", number: "741741", text: true, note: "Text HOME" },
-      { name: "Trevor Project (LGBTQ+ youth)", number: "1 866 488 7386", note: "24/7" },
+      { name: "988 Suicide & Crisis Lifeline", number: "988", note: "callOrText247" },
+      { name: "Crisis Text Line", number: "741741", text: true, note: "textHome" },
+      { name: "Trevor Project (LGBTQ+ youth)", number: "1 866 488 7386", note: "open247" },
     ],
   },
   {
@@ -54,9 +66,9 @@ export const REGIONS: CrisisRegion[] = [
     label: "United Kingdom",
     emergency: "999",
     lines: [
-      { name: "Samaritans", number: "116 123", note: "Free, 24/7" },
-      { name: "Shout", number: "85258", text: true, note: "Text SHOUT" },
-      { name: "NHS 111 (option 2)", number: "111", note: "Urgent mental health support" },
+      { name: "Samaritans", number: "116 123", note: "free247" },
+      { name: "Shout", number: "85258", text: true, note: "textShout" },
+      { name: "NHS 111 (option 2)", number: "111", note: "urgentMentalHealth" },
     ],
   },
   {
@@ -64,60 +76,60 @@ export const REGIONS: CrisisRegion[] = [
     label: "Ireland",
     emergency: "112",
     lines: [
-      { name: "Samaritans Ireland", number: "116 123", note: "Free, 24/7" },
-      { name: "Text About It", number: "50808", text: true, note: "Text HELLO" },
+      { name: "Samaritans Ireland", number: "116 123", note: "free247" },
+      { name: "Text About It", number: "50808", text: true, note: "textHello" },
     ],
   },
   {
     country: "CA",
     label: "Canada",
     emergency: "911",
-    lines: [{ name: "9-8-8 Suicide Crisis Helpline", number: "988", note: "Call or text, 24/7, EN/FR" }],
+    lines: [{ name: "9-8-8 Suicide Crisis Helpline", number: "988", note: "callOrText247EnFr" }],
   },
   {
     country: "AU",
     label: "Australia",
     emergency: "000",
     lines: [
-      { name: "Lifeline", number: "13 11 14", note: "24/7" },
-      { name: "Beyond Blue", number: "1300 22 4636", note: "24/7" },
+      { name: "Lifeline", number: "13 11 14", note: "open247" },
+      { name: "Beyond Blue", number: "1300 22 4636", note: "open247" },
     ],
   },
   {
     country: "NZ",
     label: "New Zealand",
     emergency: "111",
-    lines: [{ name: "1737 Need to Talk?", number: "1737", note: "Call or text, 24/7" }],
+    lines: [{ name: "1737 Need to Talk?", number: "1737", note: "callOrText247" }],
   },
   {
     country: "SG",
     label: "Singapore",
     emergency: "995",
-    lines: [{ name: "Samaritans of Singapore (SOS)", number: "1767", note: "24/7" }],
+    lines: [{ name: "Samaritans of Singapore (SOS)", number: "1767", note: "open247" }],
   },
   {
     country: "AE",
     label: "United Arab Emirates",
     emergency: "999",
-    lines: [{ name: "Estijaba (Dept. of Health)", number: "800 1717", note: "24/7" }],
+    lines: [{ name: "Estijaba (Dept. of Health)", number: "800 1717", note: "open247" }],
   },
   {
     country: "DE",
     label: "Germany",
     emergency: "112",
-    lines: [{ name: "Telefonseelsorge", number: "0800 111 0 111", note: "Free, 24/7" }],
+    lines: [{ name: "Telefonseelsorge", number: "0800 111 0 111", note: "free247" }],
   },
   {
     country: "NL",
     label: "Netherlands",
     emergency: "112",
-    lines: [{ name: "113 Zelfmoordpreventie", number: "0800 0113", note: "Free, 24/7" }],
+    lines: [{ name: "113 Zelfmoordpreventie", number: "0800 0113", note: "free247" }],
   },
   {
     country: "ZA",
     label: "South Africa",
     emergency: "112",
-    lines: [{ name: "SADAG Suicide Crisis Line", number: "0800 567 567", note: "24/7" }],
+    lines: [{ name: "SADAG Suicide Crisis Line", number: "0800 567 567", note: "open247" }],
   },
 ];
 
@@ -148,4 +160,7 @@ export function lineHref(line: CrisisLine): string {
   return line.text ? `sms:${digits}` : `tel:${digits}`;
 }
 
-export const COUNTRY_OPTIONS = REGIONS.map((r) => ({ code: r.country, label: r.label })).sort((a, b) => a.label.localeCompare(b.label));
+/** Country picker options, named and sorted in the reader's own language. */
+export function countryOptions(t: Messages, tag: string): { code: CountryCode; label: string }[] {
+  return REGIONS.map((r) => ({ code: r.country, label: t.crisis.countries[r.country] })).sort((a, b) => a.label.localeCompare(b.label, tag));
+}

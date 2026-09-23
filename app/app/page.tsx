@@ -84,7 +84,7 @@ export default function TodayPage() {
     <div className="space-y-8">
       <div>
         <p className="mono-label">{new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</p>
-        <h1 className="mt-2 font-[family-name:var(--font-unbounded)] text-4xl font-semibold tracking-tight sm:text-5xl">
+        <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight sm:text-5xl">
           {greet}
           {firstName ? `, ${firstName}` : ""}.
         </h1>
@@ -98,7 +98,7 @@ export default function TodayPage() {
           <>
             <div className="relative">
               <p className="mono-label !text-lime">your plan · week {care.plan.week} of 4</p>
-              <p className="mt-1 font-[family-name:var(--font-unbounded)] text-2xl font-semibold">
+              <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold">
                 {care.today.done}/{care.today.total} done today
               </p>
             </div>
@@ -110,7 +110,7 @@ export default function TodayPage() {
         ) : (
           <div className="relative">
             <p className="mono-label !text-lime">new · care plan</p>
-            <p className="mt-1 font-[family-name:var(--font-unbounded)] text-xl font-semibold sm:text-2xl">Turn your prescription into a daily plan →</p>
+            <p className="mt-1 font-[family-name:var(--font-display)] text-xl font-semibold sm:text-2xl">Turn your prescription into a daily plan →</p>
             <p className="mt-1 text-sm text-muted">Scan it or describe your diagnosis. Private and encrypted, with XP for every step.</p>
           </div>
         )}
@@ -129,7 +129,7 @@ export default function TodayPage() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {tiles.map((t) => (
           <div key={t.label} className="glass rounded-2xl p-5">
-            <div className={`font-[family-name:var(--font-unbounded)] text-3xl font-semibold ${t.accent}`}>{t.value}</div>
+            <div className={`font-[family-name:var(--font-display)] text-3xl font-semibold ${t.accent}`}>{t.value}</div>
             <div className="mono-label mt-1 !text-[10px]">{t.label}</div>
           </div>
         ))}
@@ -141,7 +141,7 @@ export default function TodayPage() {
             <Link href={tip.href} className="group glass relative block overflow-hidden rounded-3xl p-7">
               <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(142,245,212,0.35),transparent_70%)] blur-2xl transition-transform duration-700 group-hover:scale-125" />
               <p className="mono-label !text-mint">suggested now</p>
-              <h2 className="mt-2 font-[family-name:var(--font-unbounded)] text-2xl font-semibold">{tip.title}</h2>
+              <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold">{tip.title}</h2>
               <p className="mt-2 max-w-md text-muted">{tip.body}</p>
               <span className="mt-5 inline-block text-sm text-ink transition group-hover:translate-x-1">Begin →</span>
             </Link>

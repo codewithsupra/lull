@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { CompanionInput, EMPTY_CONTEXT, MAX_MESSAGE, SYSTEM_PROMPT, classify, contextBriefing } from "@/lib/companion";
+import { CompanionInput, EMPTY_CONTEXT, MAX_MESSAGE, classify, contextBriefing, crisisReply, medicalBoundary, starters, systemPrompt } from "@/lib/companion";
+import { LOCALES } from "@/lib/i18n";
 
 // Phrases a person in crisis actually types. FR2 requires >= 95% recall on this set.
 const CRISIS = [
@@ -125,12 +126,37 @@ describe("context briefing", () => {
 
 describe("system prompt guardrails", () => {
   it("forbids medication, diagnosis and impersonation", () => {
-    for (const rule of ["Never give advice about medication", "Never diagnose", "Never claim to be human"]) expect(SYSTEM_PROMPT).toContain(rule);
+    for (const rule of ["Never give advice about medication", "Never diagnose", "Never claim to be human"]) expect(systemPrompt()).toContain(rule);
   });
   it("names the CBT skills it should use", () => {
-    for (const skill of ["Thought records", "Worry time", "Grounding", "Behavioural activation", "Self-compassion"]) expect(SYSTEM_PROMPT).toContain(skill);
+    for (const skill of ["Thought records", "Worry time", "Grounding", "Behavioural activation", "Self-compassion"]) expect(systemPrompt()).toContain(skill);
   });
   it("tells it to hand off on risk", () => {
-    expect(SYSTEM_PROMPT).toMatch(/suicide, self-harm, or being in danger/);
+    expect(systemPrompt()).toMatch(/suicide, self-harm, or being in danger/);
+  });
+});
+
+describe("localised companion", () => {
+  it.each(LOCALES)("keeps the safety rules in the %s prompt", (locale) => {
+    const prompt = systemPrompt(locale);
+    for (const rule of ["Never give advice about medication", "Never diagnose", "Never claim to be human"]) expect(prompt).toContain(rule);
+    expect(prompt).toContain("Language:");
+  });
+
+  it("tells the model which language to reply in", () => {
+    expect(systemPrompt("hi")).toMatch(/Devanagari/);
+    expect(systemPrompt("en")).toMatch(/Write in English/);
+  });
+
+  it.each(LOCALES)("has a crisis reply, a medical boundary and starters in %s", (locale) => {
+    // These are shown verbatim, so a missing translation would strand a user mid-crisis.
+    expect(crisisReply(locale).length).toBeGreaterThan(80);
+    expect(medicalBoundary(locale).length).toBeGreaterThan(80);
+    expect(starters(locale).length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("writes the Hindi crisis reply in Devanagari", () => {
+    expect(crisisReply("hi")).toMatch(/[\u0900-\u097F]/);
+    expect(medicalBoundary("hi")).toMatch(/[\u0900-\u097F]/);
   });
 });

@@ -1,0 +1,33 @@
+const common = {
+  begin: "Begin →",
+  next: "Next",
+  back: "Back",
+  save: "Save",
+  saving: "Saving…",
+  saved: "Saved",
+  cancel: "Cancel",
+  done: "Done",
+  close: "Close",
+  retry: "Try again",
+  loading: "Loading…",
+  signIn: "Sign in",
+  signUp: "Create a free account",
+  signOut: "Sign out",
+  logIn: "[L] Log in",
+  goPro: "Go Pro",
+  pro: "pro",
+  helpNow: "Help now",
+  helpNowLabel: "Get help now",
+  languageLabel: "Language",
+  minutes: "min",
+  xp: "XP",
+  level: "Lv",
+  of: "of",
+  errors: {
+    generic: "Something went wrong. Try again?",
+    offline: "You're offline. Your crisis resources still work.",
+    signIn: "Sign in first.",
+  },
+} as const;
+
+export default common;

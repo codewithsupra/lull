@@ -168,7 +168,7 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
           {step === 0 && (
             <section>
               <p className="mono-label !text-mint">care plan · private beta</p>
-              <h1 className="mt-2 font-[family-name:var(--font-unbounded)] text-3xl font-semibold tracking-tight sm:text-5xl">
+              <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-5xl">
                 Your prescription, turned into a plan you&apos;ll follow.
               </h1>
               <p className="mt-4 text-muted">
@@ -202,7 +202,7 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
 
           {step === 1 && (
             <section>
-              <h2 className="font-[family-name:var(--font-unbounded)] text-2xl font-semibold sm:text-3xl">What are you working on?</h2>
+              <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold sm:text-3xl">What are you working on?</h2>
               <p className="mt-2 text-muted">Pick the closest one. It can be a diagnosis or just how things feel.</p>
               <div className="mt-6 grid gap-2 sm:grid-cols-2">
                 {CATEGORIES.map((c) => (
@@ -243,7 +243,7 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
 
           {step === 2 && (
             <section>
-              <h2 className="font-[family-name:var(--font-unbounded)] text-2xl font-semibold sm:text-3xl">Your daily rhythm</h2>
+              <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold sm:text-3xl">Your daily rhythm</h2>
               <p className="mt-2 text-muted">We time your plan and reminders around these.</p>
               <div className="mt-6 grid grid-cols-2 gap-3">
                 <TimeField label="Usually wake up" value={wake} onChange={setWake} />
@@ -269,7 +269,7 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
 
           {step === 3 && (
             <section>
-              <h2 className="font-[family-name:var(--font-unbounded)] text-2xl font-semibold sm:text-3xl">Add your prescription</h2>
+              <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold sm:text-3xl">Add your prescription</h2>
               <p className="mt-2 text-muted">Optional, but it makes the plan much better. Printed and handwritten prescriptions both work.</p>
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 <button
@@ -310,7 +310,7 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
 
           {step === 4 && (
             <section>
-              <h2 className="font-[family-name:var(--font-unbounded)] text-2xl font-semibold sm:text-3xl">Check your medicines</h2>
+              <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold sm:text-3xl">Check your medicines</h2>
               <p className="mt-2 text-muted">
                 Your plan will schedule exactly what you confirm here, and nothing else. Tick each one after checking it against your prescription.
               </p>
@@ -382,7 +382,7 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
                 <div className="absolute inset-0 animate-ping rounded-full bg-mint/10 [animation-duration:2.4s]" />
                 <div className="absolute inset-6 animate-pulse rounded-full bg-[radial-gradient(circle_at_35%_30%,#fff8,var(--mint)_35%,var(--sky)_75%)] shadow-[0_0_80px_-10px_var(--mint)]" />
               </div>
-              <p className="shimmer-text mt-10 font-[family-name:var(--font-unbounded)] text-xl font-semibold">{BUILD_STAGES[stage]}</p>
+              <p className="shimmer-text mt-10 font-[family-name:var(--font-display)] text-xl font-semibold">{BUILD_STAGES[stage]}</p>
               <p className="mono-label mt-3">private · encrypted · about 20 seconds</p>
             </section>
           )}
@@ -426,7 +426,7 @@ function TimeField({ label, value, onChange }: { label: string; value: string; o
   return (
     <label className="glass block rounded-2xl p-4">
       <span className="mono-label !text-[10px]">{label}</span>
-      <input type="time" value={value} onChange={(e) => onChange(e.target.value)} className="mt-2 block w-full bg-transparent font-[family-name:var(--font-unbounded)] text-2xl outline-none" />
+      <input type="time" value={value} onChange={(e) => onChange(e.target.value)} className="mt-2 block w-full bg-transparent font-[family-name:var(--font-display)] text-2xl outline-none" />
     </label>
   );
 }

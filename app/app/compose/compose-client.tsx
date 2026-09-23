@@ -91,7 +91,7 @@ export function ComposeClient({ initialPrompt, taskId }: { initialPrompt: string
           {!plan && (
             <>
               <p className="mono-label !text-mint">compose</p>
-              <h1 className="mt-2 font-[family-name:var(--font-unbounded)] text-4xl font-semibold tracking-tight sm:text-5xl">How are you, really?</h1>
+              <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight sm:text-5xl">How are you, really?</h1>
               <p className="mt-3 max-w-lg text-muted">
                 Write a sentence or two. Lull will write a guided session for this moment, with a breath pattern, a
                 soundscape and a voice that reads it to you.

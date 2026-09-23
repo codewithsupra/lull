@@ -4,12 +4,15 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { useUser } from "@/components/app/user-context";
-import { MAX_MESSAGE, STARTERS, type CompanionMessage } from "@/lib/companion";
+import { MAX_MESSAGE, starters, type CompanionMessage } from "@/lib/companion";
 import { forgetConversation, loadHistory, sendMessage } from "@/lib/companion-client";
 import { openCrisis } from "@/lib/safety-client";
+import { useI18n } from "@/components/i18n/locale-provider";
 
 export default function TalkPage() {
   const user = useUser();
+  const { locale, t } = useI18n();
+  const c = t.companion;
   const [messages, setMessages] = useState<CompanionMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [streaming, setStreaming] = useState<string | null>(null);
@@ -71,23 +74,20 @@ export default function TalkPage() {
       setMessages([]);
       setConfirmForget(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't clear.");
+      setError(e instanceof Error ? e.message : c.clearFailed);
     }
   };
 
   if (!user) {
     return (
       <div className="mx-auto max-w-xl py-12 text-center">
-        <p className="mono-label !text-mint">talk to lull</p>
-        <h1 className="mt-3 font-[family-name:var(--font-unbounded)] text-3xl font-semibold">Someone to think out loud with, at 3am.</h1>
-        <p className="mt-4 text-muted">
-          A companion grounded in CBT skills: thought records, reframing, grounding, worry time. It knows your plan and your check-ins, never gives
-          medical advice, and hands you to real human help the moment things feel unsafe.
-        </p>
+        <p className="mono-label !text-mint">{c.label}</p>
+        <h1 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-semibold">{c.guestHeading}</h1>
+        <p className="mt-4 text-muted">{c.guestBody}</p>
         <Link href="/login?mode=signup" className="mt-8 inline-block rounded-full bg-mint px-7 py-3 text-sm font-semibold text-bg">
-          Create a free account
+          {c.guestCta}
         </Link>
-        <p className="mono-label mt-4 !text-[10px]">15 messages a day free · encrypted · you can wipe it any time</p>
+        <p className="mono-label mt-4 !text-[10px]">{c.guestNote}</p>
       </div>
     );
   }
@@ -98,33 +98,31 @@ export default function TalkPage() {
     <div className="mx-auto flex min-h-[70dvh] max-w-2xl flex-col">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <p className="mono-label !text-mint">talk to lull</p>
-          <h1 className="mt-1 font-[family-name:var(--font-unbounded)] text-2xl font-semibold">How are you doing?</h1>
+          <p className="mono-label !text-mint">{c.label}</p>
+          <h1 className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold">{c.heading}</h1>
         </div>
         {messages.length > 0 &&
           (confirmForget ? (
             <span className="flex gap-2">
               <button onClick={forget} className="rounded-full bg-rose px-3 py-1.5 text-xs font-semibold text-bg">
-                Forget everything
+                {c.forgetEverything}
               </button>
               <button onClick={() => setConfirmForget(false)} className="rounded-full border border-white/15 px-3 py-1.5 text-xs">
-                Keep
+                {c.keep}
               </button>
             </span>
           ) : (
             <button onClick={() => setConfirmForget(true)} className="font-mono text-[11px] text-faint hover:text-rose">
-              clear memory
+              {c.clearMemory}
             </button>
           ))}
       </header>
 
       {empty && (
         <div className="mt-8">
-          <p className="text-muted">
-            I&apos;m here to listen, and to help you use a skill that fits. I&apos;m not a therapist or a doctor, and I can&apos;t advise on medicines.
-          </p>
+          <p className="text-muted">{c.intro}</p>
           <div className="mt-5 flex flex-wrap gap-2">
-            {STARTERS.map((s) => (
+            {starters(locale).map((s) => (
               <button
                 key={s}
                 onClick={() => send(s)}
@@ -150,7 +148,7 @@ export default function TalkPage() {
               {m.content}
               {m.risk && m.role === "assistant" && (
                 <button onClick={openCrisis} className="mt-3 block rounded-full bg-rose px-4 py-2 text-xs font-semibold text-bg">
-                  Open help now →
+                  {c.openHelp}
                 </button>
               )}
             </div>
@@ -158,7 +156,7 @@ export default function TalkPage() {
         ))}
         {streaming !== null && (
           <div className="glass max-w-[92%] whitespace-pre-wrap rounded-2xl rounded-bl-md px-4 py-3 text-[15px] leading-relaxed">
-            {streaming || <span className="shimmer-text font-mono text-xs uppercase tracking-[0.2em]">thinking…</span>}
+            {streaming || <span className="shimmer-text font-mono text-xs uppercase tracking-[0.2em]">{c.thinking}</span>}
           </div>
         )}
         <div ref={endRef} />
@@ -183,22 +181,22 @@ export default function TalkPage() {
             }}
             rows={2}
             disabled={busy}
-            placeholder="Whatever's on your mind…"
+            placeholder={c.placeholder}
             className="max-h-40 flex-1 resize-none bg-transparent p-3 text-[15px] outline-none placeholder:text-faint disabled:opacity-60"
-            aria-label="Message"
+            aria-label={c.messageLabel}
           />
           <button
             onClick={() => void send(draft)}
             disabled={busy || !draft.trim()}
             className="mb-1 mr-1 shrink-0 rounded-full bg-mint px-5 py-2.5 text-sm font-semibold text-bg transition disabled:opacity-40"
           >
-            {busy ? "…" : "Send"}
+            {busy ? c.sending : c.send}
           </button>
         </div>
         <p className="mono-label mt-2 !text-[10px]">
-          not a therapist or doctor · no medical advice · encrypted ·{" "}
+          {c.disclaimerPre}
           <button onClick={openCrisis} className="underline decoration-rose/40 hover:text-rose">
-            urgent help
+            {c.urgentHelp}
           </button>
         </p>
       </div>

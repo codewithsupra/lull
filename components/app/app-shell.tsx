@@ -9,20 +9,27 @@ import { PaywallHost } from "@/components/billing/paywall-host";
 import { fetchBilling } from "@/lib/billing-client";
 import { CrisisSheet } from "@/components/crisis/crisis-sheet";
 import { clearSafetyCache, openCrisis } from "@/lib/safety-client";
+import { useI18n } from "@/components/i18n/locale-provider";
+import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 
+/**
+ * Keyboard shortcuts stay on the English initials on purpose: they are muscle memory tied to
+ * physical keys, and a Devanagari keyboard would not produce them.
+ */
 const NAV = [
-  { href: "/app", label: "Today", key: "T", icon: "◐" },
-  { href: "/app/plan", label: "Plan", key: "P", icon: "❀" },
-  { href: "/app/talk", label: "Talk", key: "K", icon: "◍" },
-  { href: "/app/compose", label: "Compose", key: "C", icon: "✦" },
-  { href: "/app/breathe", label: "Breathe", key: "B", icon: "◎" },
-  { href: "/app/sounds", label: "Sounds", key: "S", icon: "∿" },
-  { href: "/app/journal", label: "Journal", key: "J", icon: "▤" },
-];
+  { href: "/app", label: "today", key: "T", icon: "◐" },
+  { href: "/app/plan", label: "plan", key: "P", icon: "❀" },
+  { href: "/app/talk", label: "talk", key: "K", icon: "◍" },
+  { href: "/app/compose", label: "compose", key: "C", icon: "✦" },
+  { href: "/app/breathe", label: "breathe", key: "B", icon: "◎" },
+  { href: "/app/sounds", label: "sounds", key: "S", icon: "∿" },
+  { href: "/app/journal", label: "journal", key: "J", icon: "▤" },
+] as const;
 
 export function AppShell({ user, children }: { user: SessionUser | null; children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useI18n();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -70,7 +77,7 @@ export function AppShell({ user, children }: { user: SessionUser | null; childre
                   isActive(n.href) ? "bg-white/10 text-ink" : "text-muted hover:text-ink"
                 }`}
               >
-                {n.label}
+                {t.nav[n.label]}
                 <span className="font-mono text-[10px] text-faint group-hover:text-lime">{n.key}</span>
               </Link>
             ))}
@@ -78,23 +85,24 @@ export function AppShell({ user, children }: { user: SessionUser | null; childre
           <button
             onClick={openCrisis}
             className="rounded-full border border-rose/50 px-3 py-1 text-xs font-semibold text-rose transition hover:bg-rose/10"
-            aria-label="Get help now"
+            aria-label={t.common.helpNowLabel}
           >
-            Help now
+            {t.common.helpNow}
           </button>
+          <LanguageSwitcher className="hidden sm:block" />
           {user ? (
             <form action={signOut} className="flex items-center gap-3">
               {pro === false && (
                 <Link href="/app/pro" className="rounded-full bg-lime px-3 py-1 text-xs font-semibold text-bg shadow-[0_0_24px_-6px_var(--lime)]">
-                  Go Pro
+                  {t.common.goPro}
                 </Link>
               )}
-              {pro && <span className="rounded-full border border-lime/40 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-lime">pro</span>}
+              {pro && <span className="rounded-full border border-lime/40 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-lime">{t.common.pro}</span>}
               <span className="hidden max-w-[160px] truncate text-xs text-muted sm:inline">{user.name ?? user.email}</span>
-              <button className="kbd">Sign out</button>
+              <button className="kbd">{t.common.signOut}</button>
             </form>
           ) : (
-            <Link href="/login" className="kbd">[L] Log in</Link>
+            <Link href="/login" className="kbd">{t.common.logIn}</Link>
           )}
         </div>
       </header>
@@ -114,7 +122,7 @@ export function AppShell({ user, children }: { user: SessionUser | null; childre
             }`}
           >
             <span className="text-base leading-none">{n.icon}</span>
-            {n.label}
+            {t.nav[n.label]}
           </Link>
         ))}
       </nav>

@@ -93,7 +93,7 @@ export function Orb({ scale, label, sub, progress, hue = "mint" }: { scale: numb
         }}
       />
       <div className="relative text-center">
-        <div className="font-[family-name:var(--font-unbounded)] text-2xl font-semibold tracking-tight sm:text-3xl">{label}</div>
+        <div className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight sm:text-3xl">{label}</div>
         {sub && <div className="mono-label mt-2">{sub}</div>}
       </div>
     </div>

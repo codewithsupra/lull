@@ -120,7 +120,7 @@ export function CheckFlow({ onDone }: { onDone: (record: ScreenerRecord) => void
           {step?.kind === "item" && (
             <>
               <p className="text-sm text-muted">{step.inst.stem}</p>
-              <h2 className="mt-3 min-h-[3.5em] font-[family-name:var(--font-unbounded)] text-2xl font-semibold leading-snug sm:text-3xl">{step.inst.items[step.index]}</h2>
+              <h2 className="mt-3 min-h-[3.5em] font-[family-name:var(--font-display)] text-2xl font-semibold leading-snug sm:text-3xl">{step.inst.items[step.index]}</h2>
               <Options labels={step.inst.options.map((o) => o.label)} selected={selected} onChoose={choose} />
             </>
           )}
@@ -128,7 +128,7 @@ export function CheckFlow({ onDone }: { onDone: (record: ScreenerRecord) => void
           {step?.kind === "followup" && (
             <section>
               <p className="mono-label !text-rose">a little more, so we can support you</p>
-              <h2 className="mt-3 font-[family-name:var(--font-unbounded)] text-2xl font-semibold">Thank you for being honest.</h2>
+              <h2 className="mt-3 font-[family-name:var(--font-display)] text-2xl font-semibold">Thank you for being honest.</h2>
               <YesNo
                 q="Are you having thoughts of ending your life right now, today?"
                 value={followup.thoughts_now}
@@ -155,7 +155,7 @@ export function CheckFlow({ onDone }: { onDone: (record: ScreenerRecord) => void
           {step?.kind === "difficulty" && (
             <>
               <p className="text-sm text-muted">If you noticed any of these problems…</p>
-              <h2 className="mt-3 min-h-[3.5em] font-[family-name:var(--font-unbounded)] text-2xl font-semibold leading-snug sm:text-3xl">
+              <h2 className="mt-3 min-h-[3.5em] font-[family-name:var(--font-display)] text-2xl font-semibold leading-snug sm:text-3xl">
                 How difficult have they made it to do your work, take care of things at home, or get along with other people?
               </h2>
               <Options labels={[...DIFFICULTY_OPTIONS]} selected={selected} onChoose={choose} disabled={submitting} />
