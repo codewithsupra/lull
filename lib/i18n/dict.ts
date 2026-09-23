@@ -33,3 +33,18 @@ export function placeholders(template: string): string[] {
 export function plural(n: number, forms: { one: string; other: string }): string {
   return n === 1 ? forms.one : forms.other;
 }
+
+/**
+ * Splits a template around a single `{token}` so a component can render a link or button in the
+ * middle of a translated sentence.
+ *
+ * This exists because word order is not translatable. English says "{link} to start your trial",
+ * Hindi puts the same link at the end of the clause. A pair of before/after strings would force
+ * every language into English word order; one template with a marker does not.
+ */
+export function splitAround(template: string, token = "link"): [string, string] {
+  const marker = `{${token}}`;
+  const at = template.indexOf(marker);
+  if (at === -1) return [template, ""];
+  return [template.slice(0, at), template.slice(at + marker.length)];
+}

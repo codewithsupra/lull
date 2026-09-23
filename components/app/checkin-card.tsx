@@ -1,18 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { MOODS, TAGS, addCheckin, type MoodCheckin } from "@/lib/data";
+import { MOODS, TAGS, addCheckin, type MoodCheckin, type TagId } from "@/lib/data";
+import { useI18n } from "@/components/i18n/locale-provider";
+import { fmt } from "@/lib/i18n";
 
 export function CheckinCard({ onSaved, disabled }: { onSaved: (c: MoodCheckin) => void; disabled?: boolean }) {
+  const { t } = useI18n();
+  const ci = t.tools.checkin;
   const [mood, setMood] = useState<number | null>(null);
   const [energy, setEnergy] = useState(3);
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<TagId[]>([]);
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  const toggleTag = (t: string) => setTags((cur) => (cur.includes(t) ? cur.filter((x) => x !== t) : cur.length < 8 ? [...cur, t] : cur));
+  const toggleTag = (tag: TagId) => setTags((cur) => (cur.includes(tag) ? cur.filter((x) => x !== tag) : cur.length < 8 ? [...cur, tag] : cur));
 
   const save = async () => {
     if (!mood) return;
@@ -27,7 +31,7 @@ export function CheckinCard({ onSaved, disabled }: { onSaved: (c: MoodCheckin) =
       setNote("");
       window.setTimeout(() => setSaved(false), 2500);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save.");
+      setError(e instanceof Error ? e.message : ci.saveFailed);
     } finally {
       setSaving(false);
     }
@@ -38,10 +42,10 @@ export function CheckinCard({ onSaved, disabled }: { onSaved: (c: MoodCheckin) =
   return (
     <div className="glass rounded-3xl p-6">
       <div className="flex items-baseline justify-between">
-        <p className="mono-label">Check in</p>
-        {saved && <span className="font-mono text-xs text-mint">✓ saved</span>}
+        <p className="mono-label">{ci.heading}</p>
+        {saved && <span className="font-mono text-xs text-mint">{ci.saved}</span>}
       </div>
-      <p className="mt-2 text-lg">How are you arriving right now?</p>
+      <p className="mt-2 text-lg">{ci.prompt}</p>
       <div className="mt-5 grid grid-cols-5 gap-2">
         {MOODS.map((m) => (
           <button
@@ -59,7 +63,7 @@ export function CheckinCard({ onSaved, disabled }: { onSaved: (c: MoodCheckin) =
             >
               {m.face}
             </span>
-            <span className="text-[11px] text-muted">{m.label}</span>
+            <span className="text-[11px] text-muted">{ci.moods[m.v]}</span>
           </button>
         ))}
       </div>
@@ -68,8 +72,8 @@ export function CheckinCard({ onSaved, disabled }: { onSaved: (c: MoodCheckin) =
         <div className="mt-6 animate-[fadeIn_0.5s_ease] space-y-5">
           <div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted">Energy</span>
-              <span className="font-mono text-xs text-faint">{["drained", "low", "steady", "lively", "buzzing"][energy - 1]}</span>
+              <span className="text-muted">{ci.energy}</span>
+              <span className="font-mono text-xs text-faint">{ci.energyLevels[energy - 1]}</span>
             </div>
             <input
               type="range"
@@ -79,17 +83,17 @@ export function CheckinCard({ onSaved, disabled }: { onSaved: (c: MoodCheckin) =
               onChange={(e) => setEnergy(Number(e.target.value))}
               className="slider mt-3 w-full"
               style={{ ["--val" as string]: `${((energy - 1) / 4) * 100}%` }}
-              aria-label="Energy"
+              aria-label={ci.energy}
             />
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {TAGS.map((t) => (
+            {TAGS.map((tag) => (
               <button
-                key={t}
-                onClick={() => toggleTag(t)}
-                className={`rounded-full border px-3 py-1 text-xs transition ${tags.includes(t) ? "border-mint/50 bg-mint/10 text-mint" : "border-white/10 text-muted hover:text-ink"}`}
+                key={tag}
+                onClick={() => toggleTag(tag)}
+                className={`rounded-full border px-3 py-1 text-xs transition ${tags.includes(tag) ? "border-mint/50 bg-mint/10 text-mint" : "border-white/10 text-muted hover:text-ink"}`}
               >
-                {t}
+                {ci.tags[tag]}
               </button>
             ))}
           </div>
@@ -97,7 +101,7 @@ export function CheckinCard({ onSaved, disabled }: { onSaved: (c: MoodCheckin) =
             value={note}
             onChange={(e) => setNote(e.target.value.slice(0, 1000))}
             rows={2}
-            placeholder="Anything on your mind? (optional)"
+            placeholder={ci.notePlaceholder}
             className="w-full resize-none rounded-xl border border-white/10 bg-black/20 p-3 text-sm outline-none placeholder:text-faint focus:border-mint/40"
           />
           {error && <p className="text-sm text-rose">{error}</p>}
@@ -107,7 +111,7 @@ export function CheckinCard({ onSaved, disabled }: { onSaved: (c: MoodCheckin) =
             className="w-full rounded-xl py-3 text-sm font-semibold text-bg transition disabled:opacity-50"
             style={{ background: selected?.color }}
           >
-            {saving ? "Saving…" : `Log “${selected?.label}”`}
+            {saving ? t.common.saving : fmt(ci.log, { mood: selected ? ci.moods[selected.v] : "" })}
           </button>
         </div>
       )}

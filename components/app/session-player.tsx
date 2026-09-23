@@ -5,6 +5,8 @@ import { getEngine, speak, LAYERS } from "@/lib/audio/engine";
 import { patternById } from "@/lib/breath";
 import { Orb, usePacer } from "@/components/app/pacer";
 import { logPractice } from "@/lib/data";
+import { useI18n } from "@/components/i18n/locale-provider";
+import { fmt } from "@/lib/i18n";
 import { planSeconds, type Plan } from "@/lib/plan";
 
 type Status = "idle" | "playing" | "done";
@@ -15,7 +17,10 @@ export function SessionPlayer({ plan, canLog, onFinished }: { plan: Plan; canLog
   const [voice, setVoice] = useState(true);
   const runRef = useRef(0);
   const startedRef = useRef(0);
+  const { t } = useI18n();
+  const sp = t.tools.session;
   const pattern = patternById(plan.breath);
+  const patternCopy = t.tools.breath.patterns[pattern.id];
   const pacer = usePacer(pattern, status === "playing", { tones: false });
   const total = planSeconds(plan);
 
@@ -86,8 +91,8 @@ export function SessionPlayer({ plan, canLog, onFinished }: { plan: Plan; canLog
   };
 
   const caption =
-    status === "done" ? "Session complete." : step < 0 ? plan.intention : step >= plan.steps.length ? plan.closing : plan.steps[step].text;
-  const layers = LAYERS.filter((l) => (plan.mix[l.id] ?? 0) > 0.05).map((l) => l.label);
+    status === "done" ? sp.complete : step < 0 ? plan.intention : step >= plan.steps.length ? plan.closing : plan.steps[step].text;
+  const layers = LAYERS.filter((l) => (plan.mix[l.id] ?? 0) > 0.05).map((l) => t.tools.layers[l.id].label);
 
   return (
     <div className="glass overflow-hidden rounded-3xl">
@@ -99,12 +104,12 @@ export function SessionPlayer({ plan, canLog, onFinished }: { plan: Plan; canLog
       )}
       <div className="grid gap-8 p-6 sm:p-8 md:grid-cols-[1fr_280px] md:items-center">
         <div>
-          <p className="mono-label !text-mint">composed for you</p>
+          <p className="mono-label !text-mint">{sp.label}</p>
           <h2 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-4xl">{plan.title}</h2>
           <div className="mt-4 flex flex-wrap gap-2 text-xs text-muted">
-            <span className="rounded-full border border-white/10 px-2.5 py-1">◎ {pattern.name}</span>
-            <span className="rounded-full border border-white/10 px-2.5 py-1">∿ {layers.join(" + ") || "Silence"}</span>
-            <span className="rounded-full border border-white/10 px-2.5 py-1">◷ ~{Math.round(total / 60)} min</span>
+            <span className="rounded-full border border-white/10 px-2.5 py-1">◎ {patternCopy.name}</span>
+            <span className="rounded-full border border-white/10 px-2.5 py-1">∿ {layers.join(" + ") || sp.silence}</span>
+            <span className="rounded-full border border-white/10 px-2.5 py-1">{fmt(sp.minutes, { n: Math.round(total / 60) })}</span>
           </div>
           <p key={caption} className="mt-8 min-h-[5.5em] animate-[fadeIn_0.9s_ease] text-lg leading-relaxed text-ink/90 sm:text-xl">
             {caption}
@@ -112,14 +117,14 @@ export function SessionPlayer({ plan, canLog, onFinished }: { plan: Plan; canLog
           <div className="mt-6 flex flex-wrap items-center gap-3">
             {status !== "playing" ? (
               <button onClick={play} className="rounded-full bg-ink px-7 py-3 text-sm font-semibold text-bg shadow-[0_0_40px_-8px_rgba(142,245,212,0.8)]">
-                {status === "done" ? "↻ Play again" : "▶ Begin session"}
+                {status === "done" ? sp.playAgain : sp.begin}
               </button>
             ) : (
-              <button onClick={stop} className="rounded-full border border-white/20 px-7 py-3 text-sm">■ End</button>
+              <button onClick={stop} className="rounded-full border border-white/20 px-7 py-3 text-sm">{sp.end}</button>
             )}
             <label className="flex cursor-pointer items-center gap-2 text-sm text-muted">
               <input type="checkbox" checked={voice} disabled={status === "playing"} onChange={(e) => setVoice(e.target.checked)} className="accent-[var(--mint)]" />
-              Voice guide
+              {sp.voiceGuide}
             </label>
           </div>
           <div className="mt-6 flex gap-1">
@@ -129,7 +134,13 @@ export function SessionPlayer({ plan, canLog, onFinished }: { plan: Plan; canLog
           </div>
         </div>
         <div className="hidden md:block">
-          <Orb scale={pacer.scale} label={status === "playing" ? pacer.phase.label : pattern.name} sub={status === "playing" ? undefined : pattern.tagline} progress={status === "playing" ? pacer.progress : 0} hue="lilac" />
+          <Orb
+            scale={pacer.scale}
+            label={status === "playing" ? t.tools.breath.phases[pacer.phase.labelKey] : patternCopy.name}
+            sub={status === "playing" ? undefined : patternCopy.tagline}
+            progress={status === "playing" ? pacer.progress : 0}
+            hue="lilac"
+          />
         </div>
       </div>
     </div>

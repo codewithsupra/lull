@@ -2,18 +2,18 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthForm } from "./auth-form";
 import { getSessionUser } from "@/lib/insforge/server";
-
-const ERRORS: Record<string, string> = {
-  oauth_failed: "That sign-in was cancelled or failed. Try again.",
-  missing_verifier: "Your sign-in session expired. Try again.",
-  exchange_failed: "We couldn't finish signing you in. Try again.",
-};
+import { getMessages } from "@/lib/i18n/server";
+import { splitAround } from "@/lib/i18n";
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   if (await getSessionUser()) redirect("/app");
+  const { t } = await getMessages();
   const params = await searchParams;
   const mode = params.mode === "signup" ? "signup" : "signin";
-  const error = typeof params.error === "string" ? ERRORS[params.error] ?? null : null;
+  const errors = t.app.auth.errors;
+  const key = typeof params.error === "string" ? params.error : null;
+  const error = key && key in errors ? errors[key as keyof typeof errors] : null;
+  const [footerBefore, footerAfter] = splitAround(t.app.auth.footer);
 
   return (
     <main className="relative grid min-h-dvh place-items-center overflow-hidden px-4 py-16">
@@ -26,7 +26,11 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           <AuthForm initialMode={mode} urlError={error} />
         </div>
         <p className="mono-label mt-6 text-center !text-[10px]">
-          your data is protected by row-level security · <Link href="/app/breathe" className="underline decoration-white/20 hover:text-ink">continue as guest</Link>
+          {footerBefore}
+          <Link href="/app/breathe" className="underline decoration-white/20 hover:text-ink">
+            {t.app.auth.continueAsGuest}
+          </Link>
+          {footerAfter}
         </p>
       </div>
     </main>

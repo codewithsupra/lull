@@ -71,15 +71,19 @@ export async function deleteCheckin(id: string) {
   if (error) throw new Error(error.message);
 }
 
+/** Faces and colours only; the mood names live in `t.tools.checkin.moods`. */
 export const MOODS = [
-  { v: 1, face: "◡̈", label: "Heavy", color: "#7d8bff" },
-  { v: 2, face: "◡", label: "Low", color: "#8aa6ff" },
-  { v: 3, face: "—", label: "Okay", color: "#8ed7f5" },
-  { v: 4, face: "◠", label: "Good", color: "#8ef5d4" },
-  { v: 5, face: "✦", label: "Bright", color: "#c8ff6e" },
-];
+  { v: 1, face: "◡̈", color: "#7d8bff" },
+  { v: 2, face: "◡", color: "#8aa6ff" },
+  { v: 3, face: "—", color: "#8ed7f5" },
+  { v: 4, face: "◠", color: "#8ef5d4" },
+  { v: 5, face: "✦", color: "#c8ff6e" },
+] as const;
+export type MoodValue = (typeof MOODS)[number]["v"];
 
-export const TAGS = ["anxious", "stressed", "tired", "restless", "sad", "calm", "focused", "grateful", "hopeful", "lonely"];
+/** Tag ids. Stored as-is (stable across languages) and displayed via `t.tools.checkin.tags`. */
+export const TAGS = ["anxious", "stressed", "tired", "restless", "sad", "calm", "focused", "grateful", "hopeful", "lonely"] as const;
+export type TagId = (typeof TAGS)[number];
 
 export function formatDuration(sec: number) {
   const m = Math.floor(sec / 60);

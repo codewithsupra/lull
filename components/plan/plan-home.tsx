@@ -3,28 +3,32 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CATEGORIES, DAY_BONUS, levelFor, sessionHref, type PlanTask, type PlanView, type Slot } from "@/lib/care-plan";
+import { DAY_BONUS, levelFor, sessionHref, type PlanTask, type PlanView, type Slot } from "@/lib/care-plan";
 import { completeTask, currentPushSubscription, disablePush, enablePush, fetchCareStats, localToday, pushSupported, type CareStats } from "@/lib/care-client";
 import { NightGarden } from "./night-garden";
+import { useI18n } from "@/components/i18n/locale-provider";
+import { fmt } from "@/lib/i18n";
 import { handlePaywall } from "@/lib/billing-client";
 
-const SLOTS: { id: Slot; label: string; icon: string }[] = [
-  { id: "morning", label: "Morning", icon: "☀︎" },
-  { id: "afternoon", label: "Afternoon", icon: "◐" },
-  { id: "evening", label: "Evening", icon: "☾" },
-  { id: "night", label: "Night", icon: "✦" },
+const SLOTS: { id: Slot; icon: string }[] = [
+  { id: "morning", icon: "☀︎" },
+  { id: "afternoon", icon: "◐" },
+  { id: "evening", icon: "☾" },
+  { id: "night", icon: "✦" },
 ];
-const KIND_STYLE: Record<PlanTask["kind"], { label: string; color: string }> = {
-  medication: { label: "medicine", color: "var(--sky)" },
-  habit: { label: "habit", color: "var(--mint)" },
-  session: { label: "session", color: "var(--lilac)" },
-  learn: { label: "learn", color: "var(--lime)" },
-  reflect: { label: "reflect", color: "var(--rose)" },
+const KIND_COLOR: Record<PlanTask["kind"], string> = {
+  medication: "var(--sky)",
+  habit: "var(--mint)",
+  session: "var(--lilac)",
+  learn: "var(--lime)",
+  reflect: "var(--rose)",
 };
 
 type Burst = { id: number; text: string };
 
 export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: PlanView; onChanged: () => void; onDeleted: () => void; demoStats?: CareStats }) {
+  const { t } = useI18n();
+  const h = t.plan.home;
   const [tasks, setTasks] = useState(plan.tasks);
   const [stats, setStats] = useState<CareStats | null>(demoStats ?? null);
   const [bursts, setBursts] = useState<Burst[]>([]);
@@ -63,13 +67,13 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
     try {
       const res = await completeTask(task.id, done);
       if (done) {
-        burst(`+${res.xp} XP`);
-        if (res.day_complete) window.setTimeout(() => burst(`Day complete · +${DAY_BONUS} XP`), 450);
+        burst(fmt(h.xpBurst, { xp: res.xp }));
+        if (res.day_complete) window.setTimeout(() => burst(fmt(h.dayComplete, { bonus: DAY_BONUS })), 450);
       }
       void refreshStats();
     } catch {
       setTasks((cur) => cur.map((t) => (t.id === task.id ? task : t)));
-      setError("Couldn't save that. Check your connection.");
+      setError(h.saveFailed);
     }
   };
 
@@ -84,7 +88,7 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
         setPush("on");
       }
     } catch (e) {
-      setPushError(e instanceof Error ? e.message : "Couldn't change reminders.");
+      setPushError(e instanceof Error ? e.message : h.remindersFailed);
     }
   };
 
@@ -99,7 +103,7 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
       setReview(json.review);
       onChanged();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't plan next week.");
+      setError(e instanceof Error ? e.message : h.replanFailed);
     } finally {
       setReplanning(false);
     }
@@ -110,17 +114,18 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
     if (res.ok) {
       await disablePush().catch(() => {});
       onDeleted();
-    } else setError("Couldn't delete. Please try again.");
+    } else setError(h.deleteFailed);
   };
 
   const xp = stats?.xp ?? 0;
   const lvl = levelFor(xp);
+  const levelName = t.plan.levels[lvl.index];
   const done = tasks.filter((t) => t.completed_at).length;
   const weekStart = new Date(`${plan.started_at}T00:00:00Z`);
   weekStart.setUTCDate(weekStart.getUTCDate() + (plan.week - 1) * 7);
   const startDay = weekStart.toISOString().slice(0, 10);
   const theme = plan.roadmap.find((r) => r.week === plan.week);
-  const category = CATEGORIES.find((c) => c.id === plan.category);
+  const categoryLabel = t.plan.categories[plan.category].label;
 
   return (
     <div className="space-y-8">
@@ -144,31 +149,31 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
       <header className="flex flex-wrap items-end justify-between gap-6">
         <div>
           <p className="mono-label !text-mint">
-            {category?.label} · week {plan.week} of 4{theme ? ` · ${theme.theme}` : ""}
+            {theme
+              ? fmt(h.headerWithTheme, { category: categoryLabel, week: plan.week, theme: theme.theme })
+              : fmt(h.header, { category: categoryLabel, week: plan.week })}
           </p>
           <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-5xl">{plan.title}</h1>
           <p className="mt-3 max-w-xl text-muted">{plan.summary}</p>
         </div>
         <div className="glass w-full rounded-2xl p-5 sm:w-72">
           <div className="flex items-baseline justify-between">
-            <span className="font-[family-name:var(--font-display)] text-lg font-semibold">
-              Lv {lvl.level} · {lvl.name}
-            </span>
+            <span className="font-[family-name:var(--font-display)] text-lg font-semibold">{fmt(h.levelLine, { level: lvl.level, name: levelName })}</span>
             <span className="font-mono text-xs text-lime">{xp} XP</span>
           </div>
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
             <motion.div className="h-full rounded-full bg-gradient-to-r from-mint to-lime" animate={{ width: `${Math.round(lvl.progress * 100)}%` }} transition={{ type: "spring", stiffness: 80, damping: 18 }} />
           </div>
           <div className="mt-3 flex justify-between font-mono text-[11px] text-muted">
-            <span>🔥 {stats?.streak ?? 0} day streak</span>
-            <span>{lvl.toNext} XP to next</span>
+            <span>{fmt(h.streak, { days: stats?.streak ?? 0 })}</span>
+            <span>{fmt(h.toNext, { xp: lvl.toNext })}</span>
           </div>
         </div>
       </header>
 
       {plan.doctor_flags.length > 0 && (
         <div className="rounded-2xl border border-sky/25 bg-sky/[0.06] p-5">
-          <p className="mono-label !text-sky">worth asking your doctor</p>
+          <p className="mono-label !text-sky">{h.doctorFlags}</p>
           <ul className="mt-2 space-y-1.5 text-sm text-ink/85">
             {plan.doctor_flags.map((f) => (
               <li key={f} className="flex gap-2">
@@ -182,8 +187,8 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
 
       <section className="glass relative overflow-hidden rounded-3xl">
         <div className="absolute left-5 top-5 z-10">
-          <p className="mono-label">your night garden</p>
-          <p className="mt-1 text-sm text-muted">Each task grows a leaf. Finish a day and it blooms.</p>
+          <p className="mono-label">{h.garden}</p>
+          <p className="mt-1 text-sm text-muted">{h.gardenHint}</p>
         </div>
         <NightGarden days={stats?.week_days ?? []} today={localToday()} streak={stats?.streak ?? 0} startDay={startDay} />
       </section>
@@ -191,13 +196,11 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
       {plan.can_replan && (
         <div className="glass flex flex-wrap items-center justify-between gap-4 rounded-3xl border-lime/25 p-6">
           <div>
-            <p className="mono-label !text-lime">week {plan.week} review</p>
-            <p className="mt-1 text-lg">
-              You completed <span className="text-lime">{Math.round(plan.week_complete_ratio * 100)}%</span> of this week. Lull will adapt next week to how it actually went.
-            </p>
+            <p className="mono-label !text-lime">{fmt(h.reviewLabel, { week: plan.week })}</p>
+            <p className="mt-1 text-lg">{fmt(h.reviewBody, { percent: Math.round(plan.week_complete_ratio * 100) })}</p>
           </div>
           <button onClick={replan} disabled={replanning} className="rounded-full bg-lime px-6 py-2.5 text-sm font-semibold text-bg disabled:opacity-60">
-            {replanning ? <span className="shimmer-text">Adapting…</span> : `Build week ${plan.week + 1} →`}
+            {replanning ? <span className="shimmer-text">{h.adapting}</span> : fmt(h.buildWeek, { week: plan.week + 1 })}
           </button>
         </div>
       )}
@@ -207,12 +210,10 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
       <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
         <section>
           <div className="flex items-baseline justify-between">
-            <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold">Today</h2>
-            <span className="font-mono text-xs text-muted">
-              {done}/{tasks.length} done
-            </span>
+            <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold">{h.todayHeading}</h2>
+            <span className="font-mono text-xs text-muted">{fmt(h.doneCount, { done, total: tasks.length })}</span>
           </div>
-          {tasks.length === 0 && <p className="mt-4 text-muted">Nothing scheduled today. Rest counts too.</p>}
+          {tasks.length === 0 && <p className="mt-4 text-muted">{h.nothingToday}</p>}
           <div className="mt-4 space-y-6">
             {SLOTS.map((slot) => {
               const list = tasks.filter((t) => t.slot === slot.id);
@@ -220,42 +221,46 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
               return (
                 <div key={slot.id}>
                   <p className="mono-label mb-2">
-                    {slot.icon} {slot.label}
+                    {slot.icon} {t.plan.slots[slot.id]}
                   </p>
                   <ul className="space-y-2">
-                    {list.map((t) => {
-                      const style = KIND_STYLE[t.kind];
-                      const isOpen = openTask === t.id;
+                    {list.map((task) => {
+                      const color = KIND_COLOR[task.kind];
+                      const isOpen = openTask === task.id;
                       return (
-                        <li key={t.id} className={`glass rounded-2xl transition ${t.completed_at ? "opacity-60" : ""}`}>
+                        <li key={task.id} className={`glass rounded-2xl transition ${task.completed_at ? "opacity-60" : ""}`}>
                           <div className="flex items-center gap-3 p-4">
                             <button
-                              onClick={() => toggle(t)}
-                              aria-label={t.completed_at ? `Mark ${t.title} not done` : `Mark ${t.title} done`}
+                              onClick={() => toggle(task)}
+                              aria-label={fmt(task.completed_at ? h.markNotDone : h.markDone, { task: task.title })}
                               className="grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 transition"
-                              style={{ borderColor: style.color, background: t.completed_at ? style.color : "transparent", boxShadow: t.completed_at ? `0 0 20px -4px ${style.color}` : undefined }}
+                              style={{
+                                borderColor: color,
+                                background: task.completed_at ? color : "transparent",
+                                boxShadow: task.completed_at ? `0 0 20px -4px ${color}` : undefined,
+                              }}
                             >
-                              {t.completed_at && <span className="text-xs font-bold text-bg">✓</span>}
+                              {task.completed_at && <span className="text-xs font-bold text-bg">✓</span>}
                             </button>
-                            <button onClick={() => setOpenTask(isOpen ? null : t.id)} className="min-w-0 flex-1 text-left">
-                              <div className={`truncate ${t.completed_at ? "line-through decoration-white/30" : ""}`}>{t.title}</div>
+                            <button onClick={() => setOpenTask(isOpen ? null : task.id)} className="min-w-0 flex-1 text-left">
+                              <div className={`truncate ${task.completed_at ? "line-through decoration-white/30" : ""}`}>{task.title}</div>
                               <div className="mt-0.5 flex gap-2 font-mono text-[10px] uppercase tracking-wider">
-                                <span style={{ color: style.color }}>{style.label}</span>
-                                {t.remind_at && <span className="text-faint">{t.remind_at}</span>}
+                                <span style={{ color }}>{t.plan.kinds[task.kind]}</span>
+                                {task.remind_at && <span className="text-faint">{task.remind_at}</span>}
                               </div>
                             </button>
-                            {t.kind === "session" && t.session_ref && !t.completed_at ? (
-                              <Link href={sessionHref(t.session_ref, t.id)} className="rounded-full border border-lilac/40 px-3 py-1 text-xs text-lilac hover:bg-lilac/10">
-                                Start
+                            {task.kind === "session" && task.session_ref && !task.completed_at ? (
+                              <Link href={sessionHref(task.session_ref, task.id)} className="rounded-full border border-lilac/40 px-3 py-1 text-xs text-lilac hover:bg-lilac/10">
+                                {h.start}
                               </Link>
                             ) : (
-                              <span className="font-mono text-xs text-lime">+{t.xp}</span>
+                              <span className="font-mono text-xs text-lime">+{task.xp}</span>
                             )}
                           </div>
                           <AnimatePresence initial={false}>
-                            {isOpen && t.detail && (
+                            {isOpen && task.detail && (
                               <motion.p initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden px-4 pb-4 pl-14 text-sm leading-relaxed text-muted">
-                                {t.detail}
+                                {task.detail}
                               </motion.p>
                             )}
                           </AnimatePresence>
@@ -272,24 +277,22 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
         <aside className="space-y-6">
           <div className="glass rounded-3xl p-6">
             <div className="flex items-center justify-between">
-              <p className="mono-label">Reminders</p>
+              <p className="mono-label">{h.remindersHeading}</p>
               {push !== "unsupported" && push !== "unknown" && (
                 <button onClick={togglePush} className={`rounded-full px-3 py-1 text-xs font-semibold ${push === "on" ? "bg-mint text-bg" : "border border-white/15 text-ink"}`}>
-                  {push === "on" ? "On" : "Turn on"}
+                  {push === "on" ? h.remindersOn : h.remindersTurnOn}
                 </button>
               )}
             </div>
             <p className="mt-2 text-sm text-muted">
-              {push === "unsupported"
-                ? "This browser can't show reminders. On iPhone, tap Share → Add to Home Screen, then open Lull from there."
-                : "A gentle nudge at each part of your day. Notifications never mention medicine or conditions."}
+              {push === "unsupported" ? h.remindersUnsupported : h.remindersBody}
             </p>
             {pushError && <p className="mt-2 text-xs text-rose">{pushError}</p>}
           </div>
 
           {plan.medications.length > 0 && (
             <div className="glass rounded-3xl p-6">
-              <p className="mono-label">Your medicines · as prescribed</p>
+              <p className="mono-label">{h.medsHeading}</p>
               <ul className="mt-3 space-y-3">
                 {plan.medications.map((m) => (
                   <li key={m.id} className="text-sm">
@@ -301,12 +304,12 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
                   </li>
                 ))}
               </ul>
-              <p className="mt-4 text-[11px] text-faint">Lull never changes your medicines. Ask your doctor before changing anything.</p>
+              <p className="mt-4 text-[11px] text-faint">{h.medsNote}</p>
             </div>
           )}
 
           <div className="glass rounded-3xl p-6">
-            <p className="mono-label">Learn this week</p>
+            <p className="mono-label">{h.learnHeading}</p>
             <ul className="mt-3 space-y-2">
               {plan.learn.map((c, i) => (
                 <li key={c.title}>
@@ -322,7 +325,7 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
           {plan.doctor_questions.length > 0 && (
             <div className="glass rounded-3xl p-6">
               <div className="flex items-center justify-between">
-                <p className="mono-label">For your next appointment</p>
+                <p className="mono-label">{h.questionsHeading}</p>
                 <button
                   onClick={async () => {
                     await navigator.clipboard.writeText(plan.doctor_questions.map((q) => `• ${q}`).join("\n"));
@@ -331,7 +334,7 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
                   }}
                   className="font-mono text-[11px] text-muted hover:text-ink"
                 >
-                  {copied ? "copied ✓" : "copy"}
+                  {copied ? h.copied : h.copy}
                 </button>
               </div>
               <ul className="mt-3 space-y-2 text-sm text-ink/85">
@@ -346,7 +349,7 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
           )}
 
           <div className="glass rounded-3xl p-6">
-            <p className="mono-label">The road ahead</p>
+            <p className="mono-label">{h.roadmapHeading}</p>
             <ol className="mt-3 space-y-3">
               {plan.roadmap.map((r) => (
                 <li key={r.week} className={`flex gap-3 text-sm ${r.week < plan.week ? "opacity-50" : ""}`}>
@@ -361,26 +364,26 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
           </div>
 
           <div className="rounded-3xl border border-white/10 p-6 text-sm">
-            <p className="mono-label">Your data</p>
-            <p className="mt-2 text-muted">Encrypted health data and no personal details. You can delete all of it at any time.</p>
+            <p className="mono-label">{h.dataHeading}</p>
+            <p className="mt-2 text-muted">{h.dataBody}</p>
             {confirmDelete ? (
               <div className="mt-3 flex gap-2">
                 <button onClick={remove} className="rounded-full bg-rose px-4 py-1.5 text-xs font-semibold text-bg">
-                  Delete everything
+                  {h.deleteEverything}
                 </button>
                 <button onClick={() => setConfirmDelete(false)} className="rounded-full border border-white/15 px-4 py-1.5 text-xs">
-                  Cancel
+                  {t.common.cancel}
                 </button>
               </div>
             ) : (
               <button onClick={() => setConfirmDelete(true)} className="mt-3 font-mono text-xs text-rose/80 hover:text-rose">
-                delete my health data →
+                {h.deletePrompt}
               </button>
             )}
           </div>
         </aside>
       </div>
-      <p className="mono-label text-center !text-[10px]">lull is a wellbeing companion, not medical advice · in an emergency call your local emergency number</p>
+      <p className="mono-label text-center !text-[10px]">{h.footer}</p>
     </div>
   );
 }

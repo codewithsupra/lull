@@ -4,6 +4,7 @@ import { createInsForgeServerClient } from "@/lib/insforge/server";
 import { openrouter, CHAT_MODEL, parseJsonReply } from "@/lib/ai/openrouter";
 import { requireFeature } from "@/lib/billing-server";
 import { withinLimit } from "@/lib/care-plan-server";
+import { getLocale } from "@/lib/i18n/server";
 
 const Insight = z.object({
   headline: z.string().max(140),
@@ -15,6 +16,7 @@ const Insight = z.object({
 });
 
 export async function POST() {
+  const locale = await getLocale();
   const insforge = await createInsForgeServerClient();
   const { data: auth } = await insforge.auth.getCurrentUser();
   if (!auth?.user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
@@ -41,7 +43,10 @@ export async function POST() {
         {
           role: "system",
           content:
-            'You are a gentle wellbeing companion. Mood and energy are on a 1-5 scale. Look for real patterns in the data: time of day, tags, energy compared with mood, and whether practice lines up with better days. Be specific and kind, and never clinical. Reply as JSON: {"headline": string, "observations": [2-3 short strings], "suggestion": {"text": string, "action": "breathe"|"sounds"|"compose"}}.',
+            'You are a gentle wellbeing companion. Mood and energy are on a 1-5 scale. Look for real patterns in the data: time of day, tags, energy compared with mood, and whether practice lines up with better days. Be specific and kind, and never clinical. Reply as JSON: {"headline": string, "observations": [2-3 short strings], "suggestion": {"text": string, "action": "breathe"|"sounds"|"compose"}}.' +
+            (locale === "hi"
+              ? ' Write "headline", "observations" and "suggestion.text" in Hindi, in Devanagari script, in everyday spoken Hindi. "action" is an identifier and stays in English.'
+              : ""),
         },
         { role: "user", content: JSON.stringify({ now: new Date().toISOString(), checkins: rows, practice: practice.data ?? [] }) },
       ],

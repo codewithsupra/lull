@@ -2,10 +2,13 @@
 
 import { useActionState, useState } from "react";
 import { signIn, signUp, signInWithProvider, type AuthState } from "@/app/actions/auth";
+import { useI18n } from "@/components/i18n/locale-provider";
 
 const initial: AuthState = { error: null };
 
 export function AuthForm({ initialMode, urlError }: { initialMode: "signin" | "signup"; urlError: string | null }) {
+  const { t } = useI18n();
+  const a = t.app.auth;
   const [mode, setMode] = useState(initialMode);
   const [inState, inAction, inPending] = useActionState(signIn, initial);
   const [upState, upAction, upPending] = useActionState(signUp, initial);
@@ -22,7 +25,7 @@ export function AuthForm({ initialMode, urlError }: { initialMode: "signin" | "s
             onClick={() => setMode(m)}
             className={`rounded-full py-2 transition ${mode === m ? "bg-white/10 text-ink" : "text-muted hover:text-ink"}`}
           >
-            {m === "signin" ? "Sign in" : "Create account"}
+            {m === "signin" ? a.signIn : a.createAccount}
           </button>
         ))}
       </div>
@@ -32,7 +35,7 @@ export function AuthForm({ initialMode, urlError }: { initialMode: "signin" | "s
           <form key={p} action={signInWithProvider.bind(null, p)}>
             <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] py-2.5 text-sm transition hover:border-white/25 hover:bg-white/[0.06]">
               {p === "google" ? <GoogleIcon /> : <GithubIcon />}
-              {p === "google" ? "Google" : "GitHub"}
+              {p === "google" ? a.google : a.github}
             </button>
           </form>
         ))}
@@ -40,14 +43,14 @@ export function AuthForm({ initialMode, urlError }: { initialMode: "signin" | "s
 
       <div className="my-6 flex items-center gap-3">
         <div className="h-px flex-1 bg-white/10" />
-        <span className="mono-label !text-[10px]">or with email</span>
+        <span className="mono-label !text-[10px]">{a.orWithEmail}</span>
         <div className="h-px flex-1 bg-white/10" />
       </div>
 
       <form action={mode === "signin" ? inAction : upAction} className="space-y-3">
-        {mode === "signup" && <Field name="name" type="text" label="Name" autoComplete="name" required={false} />}
-        <Field name="email" type="email" label="Email" autoComplete="email" />
-        <Field name="password" type="password" label="Password" autoComplete={mode === "signin" ? "current-password" : "new-password"} minLength={6} />
+        {mode === "signup" && <Field name="name" type="text" label={a.name} autoComplete="name" required={false} />}
+        <Field name="email" type="email" label={a.email} autoComplete="email" />
+        <Field name="password" type="password" label={a.password} autoComplete={mode === "signin" ? "current-password" : "new-password"} minLength={6} />
         {error && (
           <p role="alert" className="rounded-lg border border-rose/30 bg-rose/10 px-3 py-2 text-sm text-rose">
             {error}
@@ -57,7 +60,7 @@ export function AuthForm({ initialMode, urlError }: { initialMode: "signin" | "s
           disabled={pending}
           className="mt-2 w-full rounded-xl bg-ink py-3 text-sm font-semibold text-bg shadow-[0_0_40px_-10px_rgba(142,245,212,0.8)] transition hover:brightness-95 disabled:opacity-60"
         >
-          {pending ? "One moment…" : mode === "signin" ? "Sign in" : "Create account"}
+          {pending ? a.working : mode === "signin" ? a.signIn : a.createAccount}
         </button>
       </form>
     </div>

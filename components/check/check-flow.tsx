@@ -2,22 +2,23 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { DIFFICULTY_OPTIONS, GAD7, PHQ9, PHQ9_RISK_ITEM, SLEEP, type Instrument, type ScreenerRecord } from "@/lib/screeners";
+import { GAD7, PHQ9, PHQ9_RISK_ITEM, SLEEP, type Instrument, type ScreenerRecord } from "@/lib/screeners";
 import { CrisisCard } from "@/components/plan/crisis-card";
+import { useI18n } from "@/components/i18n/locale-provider";
+import { LOCALE_META } from "@/lib/i18n";
 
 type Step =
   | { kind: "item"; inst: Instrument; index: number }
   | { kind: "followup" }
   | { kind: "difficulty" };
 
-const BASE_STEPS: Step[] = [
-  ...PHQ9.items.map((_, index) => ({ kind: "item" as const, inst: PHQ9, index })),
-  ...GAD7.items.map((_, index) => ({ kind: "item" as const, inst: GAD7, index })),
-  ...SLEEP.items.map((_, index) => ({ kind: "item" as const, inst: SLEEP, index })),
-  { kind: "difficulty" as const },
-];
+const itemsOf = (inst: Instrument): Step[] => Array.from({ length: inst.itemCount }, (_, index) => ({ kind: "item" as const, inst, index }));
+
+const BASE_STEPS: Step[] = [...itemsOf(PHQ9), ...itemsOf(GAD7), ...itemsOf(SLEEP), { kind: "difficulty" as const }];
 
 export function CheckFlow({ onDone }: { onDone: (record: ScreenerRecord) => void }) {
+  const { locale, t } = useI18n();
+  const sc = t.screeners;
   const [answers, setAnswers] = useState<Record<string, number[]>>({ phq9: [], gad7: [], sleep: [] });
   const [followup, setFollowup] = useState<{ thoughts_now: boolean | null; plan_or_intent: boolean | null }>({ thoughts_now: null, plan_or_intent: null });
   const [difficulty, setDifficulty] = useState<number | null>(null);
@@ -30,7 +31,7 @@ export function CheckFlow({ onDone }: { onDone: (record: ScreenerRecord) => void
   // The safety follow-up appears right after PHQ-9 item 9, only when it's endorsed.
   const steps = useMemo(() => {
     if (!riskEndorsed) return BASE_STEPS;
-    const at = PHQ9.items.length;
+    const at = PHQ9.itemCount;
     return [...BASE_STEPS.slice(0, at), { kind: "followup" as const }, ...BASE_STEPS.slice(at)];
   }, [riskEndorsed]);
   const step = steps[pos];
@@ -54,12 +55,12 @@ export function CheckFlow({ onDone }: { onDone: (record: ScreenerRecord) => void
         if (!res.ok) throw new Error(json.error);
         onDone(json.record);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Something went wrong.");
+        setError(e instanceof Error ? e.message : t.common.errors.generic);
       } finally {
         setSubmitting(false);
       }
     },
-    [answers, followup, onDone, riskEndorsed],
+    [answers, followup, onDone, riskEndorsed, t],
   );
 
   const choose = useCallback(
@@ -95,11 +96,13 @@ export function CheckFlow({ onDone }: { onDone: (record: ScreenerRecord) => void
 
   return (
     <div className="mx-auto max-w-2xl">
-      {crisis && <CrisisCard onContinue={() => setCrisis(false)} message="Thank you for telling us. If you're having thoughts of hurting yourself, please reach out to someone now — you deserve support right away." />}
+      {crisis && <CrisisCard onContinue={() => setCrisis(false)} message={sc.crisisCard} />}
 
       <div className="mb-10">
         <div className="flex justify-between font-mono text-[11px] text-muted">
-          <span>{step?.kind === "item" ? step.inst.name : step?.kind === "followup" ? "Checking in" : "Last question"}</span>
+          <span>
+            {step?.kind === "item" ? sc.instruments[step.inst.id].name : step?.kind === "followup" ? sc.followup.checkingIn : sc.lastQuestion}
+          </span>
           <span>
             {Math.min(pos + 1, total)} / {total}
           </span>
@@ -119,23 +122,28 @@ export function CheckFlow({ onDone }: { onDone: (record: ScreenerRecord) => void
         >
           {step?.kind === "item" && (
             <>
-              <p className="text-sm text-muted">{step.inst.stem}</p>
-              <h2 className="mt-3 min-h-[3.5em] font-[family-name:var(--font-display)] text-2xl font-semibold leading-snug sm:text-3xl">{step.inst.items[step.index]}</h2>
-              <Options labels={step.inst.options.map((o) => o.label)} selected={selected} onChoose={choose} />
+              <p className="text-sm text-muted">{sc.instruments[step.inst.id].stem}</p>
+              <h2 className="mt-3 min-h-[3.5em] font-[family-name:var(--font-display)] text-2xl font-semibold leading-snug sm:text-3xl">
+                {sc.instruments[step.inst.id].items[step.index]}
+              </h2>
+              <Options labels={sc.frequency} selected={selected} onChoose={choose} />
+              {step.inst.clinical && !LOCALE_META[locale].clinicallyReviewed && <p className="mt-4 text-xs text-faint">{sc.reviewPending}</p>}
             </>
           )}
 
           {step?.kind === "followup" && (
             <section>
-              <p className="mono-label !text-rose">a little more, so we can support you</p>
-              <h2 className="mt-3 font-[family-name:var(--font-display)] text-2xl font-semibold">Thank you for being honest.</h2>
+              <p className="mono-label !text-rose">{sc.followup.label}</p>
+              <h2 className="mt-3 font-[family-name:var(--font-display)] text-2xl font-semibold">{sc.followup.heading}</h2>
               <YesNo
-                q="Are you having thoughts of ending your life right now, today?"
+                q={sc.followup.thoughtsNow}
+                labels={sc.followup}
                 value={followup.thoughts_now}
                 onChange={(v) => setFollowup((f) => ({ ...f, thoughts_now: v }))}
               />
               <YesNo
-                q="Have you thought about how you might do it, or do you intend to act on these thoughts?"
+                q={sc.followup.planOrIntent}
+                labels={sc.followup}
                 value={followup.plan_or_intent}
                 onChange={(v) => setFollowup((f) => ({ ...f, plan_or_intent: v }))}
               />
@@ -147,44 +155,44 @@ export function CheckFlow({ onDone }: { onDone: (record: ScreenerRecord) => void
                 }}
                 className="mt-8 rounded-full bg-ink px-7 py-3 text-sm font-semibold text-bg disabled:opacity-40"
               >
-                Continue
+                {sc.followup.continue}
               </button>
             </section>
           )}
 
           {step?.kind === "difficulty" && (
             <>
-              <p className="text-sm text-muted">If you noticed any of these problems…</p>
+              <p className="text-sm text-muted">{sc.difficulty.stem}</p>
               <h2 className="mt-3 min-h-[3.5em] font-[family-name:var(--font-display)] text-2xl font-semibold leading-snug sm:text-3xl">
-                How difficult have they made it to do your work, take care of things at home, or get along with other people?
+                {sc.difficulty.question}
               </h2>
-              <Options labels={[...DIFFICULTY_OPTIONS]} selected={selected} onChoose={choose} disabled={submitting} />
+              <Options labels={sc.difficulty.options} selected={selected} onChoose={choose} disabled={submitting} />
             </>
           )}
         </motion.div>
       </AnimatePresence>
 
-      {submitting && <p className="shimmer-text mt-6 font-mono text-xs uppercase tracking-[0.2em]">Understanding your answers privately…</p>}
+      {submitting && <p className="shimmer-text mt-6 font-mono text-xs uppercase tracking-[0.2em]">{sc.submitting}</p>}
       {error && (
         <p role="alert" className="mt-6 rounded-xl border border-rose/30 bg-rose/10 px-4 py-3 text-sm text-rose">
           {error}{" "}
           <button className="underline" onClick={() => submit(difficulty)}>
-            Try again
+            {t.common.retry}
           </button>
         </p>
       )}
 
       <div className="mt-10 flex items-center justify-between text-sm">
         <button onClick={() => setPos((p) => Math.max(0, p - 1))} className={`text-muted hover:text-ink ${pos === 0 ? "invisible" : ""}`}>
-          ← Back
+          ← {t.common.back}
         </button>
-        <span className="hidden font-mono text-[11px] text-faint sm:inline">press 1–4 to answer</span>
+        <span className="hidden font-mono text-[11px] text-faint sm:inline">{sc.keyHint}</span>
       </div>
     </div>
   );
 }
 
-function Options({ labels, selected, onChoose, disabled }: { labels: string[]; selected?: number; onChoose: (v: number) => void; disabled?: boolean }) {
+function Options({ labels, selected, onChoose, disabled }: { labels: readonly string[]; selected?: number; onChoose: (v: number) => void; disabled?: boolean }) {
   return (
     <div className="mt-8 grid gap-2">
       {labels.map((label, i) => (
@@ -204,14 +212,14 @@ function Options({ labels, selected, onChoose, disabled }: { labels: string[]; s
   );
 }
 
-function YesNo({ q, value, onChange }: { q: string; value: boolean | null; onChange: (v: boolean) => void }) {
+function YesNo({ q, labels, value, onChange }: { q: string; labels: { yes: string; no: string }; value: boolean | null; onChange: (v: boolean) => void }) {
   return (
     <div className="mt-6">
       <p className="text-ink/90">{q}</p>
       <div className="mt-3 flex gap-2">
         {[
-          [true, "Yes"],
-          [false, "No"],
+          [true, labels.yes],
+          [false, labels.no],
         ].map(([v, l]) => (
           <button
             key={String(l)}

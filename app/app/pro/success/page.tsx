@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { fetchBilling } from "@/lib/billing-client";
+import { useI18n } from "@/components/i18n/locale-provider";
 
 /**
  * Stripe redirects here, but access is granted only by the verified webhook → trigger path,
  * so we poll until the entitlement lands rather than trusting the redirect.
  */
 export default function ProSuccess() {
+  const { t } = useI18n();
+  const p = t.app.billing.pro;
   const [state, setState] = useState<"waiting" | "active" | "slow">("waiting");
 
   useEffect(() => {
@@ -37,22 +40,22 @@ export default function ProSuccess() {
           {state === "active" ? "✦" : ""}
         </div>
       </div>
-      {state === "waiting" && <p className="shimmer-text mt-10 font-[family-name:var(--font-display)] text-xl font-semibold">Confirming your payment securely…</p>}
+      {state === "waiting" && <p className="shimmer-text mt-10 font-[family-name:var(--font-display)] text-xl font-semibold">{p.confirming}</p>}
       {state === "active" && (
         <>
-          <h1 className="mt-10 font-[family-name:var(--font-display)] text-3xl font-semibold">Welcome to Lull Pro.</h1>
-          <p className="mt-3 text-muted">Everything is unlocked. Your garden just got a lot brighter.</p>
+          <h1 className="mt-10 font-[family-name:var(--font-display)] text-3xl font-semibold">{p.welcome}</h1>
+          <p className="mt-3 text-muted">{p.welcomeBody}</p>
           <Link href="/app/plan" className="mt-8 inline-block rounded-full bg-lime px-7 py-3 text-sm font-semibold text-bg">
-            Go to my plan →
+            {p.goToPlan}
           </Link>
         </>
       )}
       {state === "slow" && (
         <>
-          <h1 className="mt-10 font-[family-name:var(--font-display)] text-2xl font-semibold">Payment received, still syncing.</h1>
-          <p className="mt-3 text-muted">This can take a minute. Pro will switch on automatically, and you can safely leave this page.</p>
+          <h1 className="mt-10 font-[family-name:var(--font-display)] text-2xl font-semibold">{p.syncing}</h1>
+          <p className="mt-3 text-muted">{p.syncingBody}</p>
           <Link href="/app" className="mt-8 inline-block rounded-full border border-white/15 px-6 py-2.5 text-sm">
-            Back to Lull
+            {p.backToLull}
           </Link>
         </>
       )}

@@ -7,13 +7,14 @@
  */
 
 export const LAYERS = [
-  { id: "rain", label: "Rain", hint: "Soft rain on glass" },
-  { id: "ocean", label: "Ocean", hint: "Slow tidal swell" },
-  { id: "wind", label: "Wind", hint: "High mountain air" },
-  { id: "fire", label: "Hearth", hint: "Crackling embers" },
-  { id: "brown", label: "Deep", hint: "Brown noise for focus" },
-  { id: "drone", label: "Drone", hint: "Warm harmonic pad" },
-  { id: "bowls", label: "Bowls", hint: "Distant singing bowls" },
+  // Names and hints live in `t.tools.layers`.
+  { id: "rain" },
+  { id: "ocean" },
+  { id: "wind" },
+  { id: "fire" },
+  { id: "brown" },
+  { id: "drone" },
+  { id: "bowls" },
 ] as const;
 
 export type LayerId = (typeof LAYERS)[number]["id"];

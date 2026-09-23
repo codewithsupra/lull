@@ -3,7 +3,8 @@ import { z } from "zod";
 import type { ChatCompletionCreateParamsNonStreaming } from "openai/resources/chat/completions";
 import { openrouter, CHAT_MODEL, parseJsonReply } from "@/lib/ai/openrouter";
 import { WeekPlan, type MedicationInput, type Outline } from "@/lib/care-plan";
-import { PLAN_RULES } from "@/lib/care-plan-prompts";
+import { PLAN_RULES, planLanguage } from "@/lib/care-plan-prompts";
+import { getLocale } from "@/lib/i18n/server";
 import { PRIVATE_ROUTING, addDays, buildWeekTasks, decryptTask, requireUser, withinLimit } from "@/lib/care-plan-server";
 import { decrypt, decryptJson, decryptOpt, encryptJson } from "@/lib/crypto";
 import { redactDeep } from "@/lib/redact";
@@ -20,6 +21,7 @@ const Reply = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const locale = await getLocale();
   const auth = await requireUser();
   if ("error" in auth) return auth.error;
   const { insforge, userId } = auth;
@@ -89,6 +91,8 @@ export async function POST(request: NextRequest) {
         {
           role: "system",
           content: `${PLAN_RULES}
+
+${planLanguage(locale)}
 
 You are now adapting the plan for week ${nextWeek} of 4 from how last week actually went.
 - Keep habits with >=60% completion and make them slightly harder or add one new habit that builds on them.

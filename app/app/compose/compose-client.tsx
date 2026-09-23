@@ -8,22 +8,17 @@ import { SessionPlayer } from "@/components/app/session-player";
 import { timeAgo } from "@/lib/data";
 import type { Plan } from "@/lib/plan";
 import { TaskReturn, useTaskCompletion } from "@/components/plan/task-return";
+import { useI18n } from "@/components/i18n/locale-provider";
+import { fmt } from "@/lib/i18n";
 import { handlePaywall } from "@/lib/billing-client";
 
-const SUGGESTIONS = [
-  "Can't switch off after a long day of meetings",
-  "Nervous before a big presentation tomorrow",
-  "Lying awake at 2am, mind racing",
-  "Feeling lonely and a bit flat today",
-  "Scattered, too many tabs open in my head",
-];
-
-const STAGES = ["Listening…", "Choosing a breath…", "Mixing your soundscape…", "Writing your words…"];
 
 type History = { id: string; title: string; prompt: string; plan: Plan; created_at: string };
 
 export function ComposeClient({ initialPrompt, taskId }: { initialPrompt: string; taskId?: string }) {
   const user = useUser();
+  const { locale, t } = useI18n();
+  const c = t.app.compose;
   const task = useTaskCompletion(taskId);
   const [prompt, setPrompt] = useState(initialPrompt);
   const [minutes, setMinutes] = useState(5);
@@ -50,9 +45,9 @@ export function ComposeClient({ initialPrompt, taskId }: { initialPrompt: string
 
   useEffect(() => {
     if (!loading) return;
-    const id = window.setInterval(() => setStage((s) => Math.min(s + 1, STAGES.length - 1)), 1400);
+    const id = window.setInterval(() => setStage((s) => Math.min(s + 1, c.stages.length - 1)), 1400);
     return () => window.clearInterval(id);
-  }, [loading]);
+  }, [loading, c.stages.length]);
 
   const compose = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -64,18 +59,18 @@ export function ComposeClient({ initialPrompt, taskId }: { initialPrompt: string
       const res = await fetch("/api/compose", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, minutes }),
+        body: JSON.stringify({ prompt, minutes, locale }),
       });
       const json = await res.json();
       if (handlePaywall(res.status, json)) return;
-      if (!res.ok) throw new Error(json.error ?? "Something went wrong.");
+      if (!res.ok) throw new Error(json.error ?? t.common.errors.generic);
       showPlan(json.plan);
       if (json.id) {
         setHistory((h) => [{ id: json.id, title: json.plan.title, prompt, plan: json.plan, created_at: new Date().toISOString() }, ...h].slice(0, 8));
       }
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(err instanceof Error ? err.message : t.common.errors.generic);
     } finally {
       setLoading(false);
     }
@@ -83,19 +78,16 @@ export function ComposeClient({ initialPrompt, taskId }: { initialPrompt: string
 
   return (
     <div className="space-y-10">
-      {taskId && <TaskReturn state={task.state} xp={task.xp} hint="Compose a session for how you feel, then listen for at least a minute." />}
+      {taskId && <TaskReturn state={task.state} xp={task.xp} hint={c.taskHint} />}
       {plan && <SessionPlayer key={planKey} plan={plan} canLog={!!user} onFinished={() => void task.complete()} />}
 
       <section className="grid gap-10 lg:grid-cols-[1fr_320px]">
         <div>
           {!plan && (
             <>
-              <p className="mono-label !text-mint">compose</p>
-              <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight sm:text-5xl">How are you, really?</h1>
-              <p className="mt-3 max-w-lg text-muted">
-                Write a sentence or two. Lull will write a guided session for this moment, with a breath pattern, a
-                soundscape and a voice that reads it to you.
-              </p>
+              <p className="mono-label !text-mint">{c.label}</p>
+              <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight sm:text-5xl">{c.heading}</h1>
+              <p className="mt-3 max-w-lg text-muted">{c.intro}</p>
             </>
           )}
 
@@ -108,7 +100,7 @@ export function ComposeClient({ initialPrompt, taskId }: { initialPrompt: string
               }}
               disabled={!user || loading}
               rows={4}
-              placeholder={user ? "e.g. I have a big interview tomorrow and I can't stop replaying everything…" : "Sign in to compose your own sessions."}
+              placeholder={user ? c.placeholder : c.guestPlaceholder}
               className="w-full resize-none rounded-2xl bg-transparent p-4 text-lg outline-none placeholder:text-faint disabled:opacity-60"
             />
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-3 pb-2 pt-3">
@@ -120,7 +112,7 @@ export function ComposeClient({ initialPrompt, taskId }: { initialPrompt: string
                     onClick={() => setMinutes(m)}
                     className={`rounded-full px-3 py-1 font-mono text-xs transition ${m === minutes ? "bg-white/10 text-ink" : "text-muted hover:text-ink"}`}
                   >
-                    {m} min
+                    {fmt(c.minutes, { n: m })}
                   </button>
                 ))}
               </div>
@@ -129,20 +121,20 @@ export function ComposeClient({ initialPrompt, taskId }: { initialPrompt: string
                   disabled={loading || prompt.trim().length < 3}
                   className="rounded-full bg-mint px-5 py-2 text-sm font-semibold text-bg shadow-[0_0_30px_-6px_var(--mint)] transition disabled:opacity-40"
                 >
-                  {loading ? <span className="shimmer-text !text-bg">{STAGES[stage]}</span> : "✦ Compose"}
+                  {loading ? <span className="shimmer-text !text-bg">{c.stages[stage]}</span> : c.cta}
                 </button>
               ) : (
                 <Link href="/login?mode=signup" className="rounded-full bg-mint px-5 py-2 text-sm font-semibold text-bg">
-                  Sign up free to compose
+                  {c.guestCta}
                 </Link>
               )}
             </div>
           </form>
-          {loading && <p className="shimmer-text mt-4 text-center font-mono text-xs uppercase tracking-[0.2em]">{STAGES[stage]}</p>}
+          {loading && <p className="shimmer-text mt-4 text-center font-mono text-xs uppercase tracking-[0.2em]">{c.stages[stage]}</p>}
           {error && <p role="alert" className="mt-4 rounded-xl border border-rose/30 bg-rose/10 px-4 py-3 text-sm text-rose">{error}</p>}
 
           <div className="mt-5 flex flex-wrap gap-2">
-            {SUGGESTIONS.map((s) => (
+            {c.suggestions.map((s) => (
               <button
                 key={s}
                 disabled={!user || loading}
@@ -153,15 +145,15 @@ export function ComposeClient({ initialPrompt, taskId }: { initialPrompt: string
               </button>
             ))}
           </div>
-          <p className="mono-label mt-8 !text-[10px]">⌘ + enter to compose · not a substitute for professional care</p>
+          <p className="mono-label mt-8 !text-[10px]">{c.footer}</p>
         </div>
 
         <aside>
-          <p className="mono-label">Your sessions</p>
+          <p className="mono-label">{c.sessionsHeading}</p>
           {!user ? (
-            <p className="mt-3 text-sm text-muted">Sessions you compose are saved to your account so you can replay them any time.</p>
+            <p className="mt-3 text-sm text-muted">{c.sessionsGuest}</p>
           ) : history.length === 0 ? (
-            <p className="mt-3 text-sm text-muted">Nothing yet. Your first session will show up here.</p>
+            <p className="mt-3 text-sm text-muted">{c.sessionsEmpty}</p>
           ) : (
             <ul className="mt-3 space-y-2">
               {history.map((h) => (

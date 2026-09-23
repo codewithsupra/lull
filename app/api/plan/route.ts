@@ -6,7 +6,7 @@ import { PRIVATE_ROUTING, buildWeekTasks, loadActivePlan, requireUser, withinLim
 import { encrypt, encryptJson, encryptOpt } from "@/lib/crypto";
 import { redact, redactDeep } from "@/lib/redact";
 import { logError, logEvent } from "@/lib/log";
-import { PLAN_RULES } from "@/lib/care-plan-prompts";
+import { PLAN_RULES, planLanguage } from "@/lib/care-plan-prompts";
 
 export const maxDuration = 60;
 
@@ -43,6 +43,16 @@ export async function GET(request: NextRequest) {
   }
 }
 
+/** Stable English names for the condition, for the model brief only — never shown to a user. */
+const CONDITION_FOR_MODEL: Record<string, string> = {
+  anxiety: "Anxiety",
+  insomnia: "Sleep trouble / insomnia",
+  stress: "Stress and burnout",
+  low_mood: "Low mood",
+  adhd: "Focus difficulties / ADHD",
+  other: "General wellbeing",
+};
+
 export async function POST(request: NextRequest) {
   const auth = await requireUser();
   if ("error" in auth) return auth.error;
@@ -58,8 +68,9 @@ export async function POST(request: NextRequest) {
 
   const crisisHint = CRISIS_TERMS.test(input.text);
   const category = CATEGORIES.find((c) => c.id === input.category)!;
+  // The brief stays in English: it is instructions to the model, not user-facing copy.
   const brief = {
-    condition: category.label,
+    condition: CONDITION_FOR_MODEL[category.id],
     how_long: { new: "just diagnosed / new", months: "a few months", years: "more than a year" }[input.duration],
     severity_1_to_5: input.severity,
     wake_time: input.wake,
@@ -83,7 +94,7 @@ export async function POST(request: NextRequest) {
       max_completion_tokens: 6000,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: `${PLAN_RULES}\n\n${SHAPE}` },
+        { role: "system", content: `${PLAN_RULES}\n\n${planLanguage(input.locale)}\n\n${SHAPE}` },
         { role: "user", content: JSON.stringify(brief) },
       ],
       ...PRIVATE_ROUTING,

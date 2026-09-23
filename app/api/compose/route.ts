@@ -5,11 +5,20 @@ import { openrouter, CHAT_MODEL, parseJsonReply } from "@/lib/ai/openrouter";
 import { PlanSchema } from "@/lib/plan";
 import { requireFeature } from "@/lib/billing-server";
 import { FEATURES } from "@/lib/billing";
+import { getLocale } from "@/lib/i18n/server";
+import { LOCALES } from "@/lib/i18n";
 
 const Body = z.object({
   prompt: z.string().trim().min(3).max(600),
   minutes: z.coerce.number().int().min(3).max(15).catch(5),
+  locale: z.enum(LOCALES).optional(),
 });
+
+/** Session scripts are spoken aloud, so the language has to match the listener's. */
+const LANGUAGE: Record<string, string> = {
+  en: "Write every string in English.",
+  hi: "Write every string in Hindi, in Devanagari script, in warm everyday spoken Hindi — the language a calm friend would use, not formal Hindi. Keep the \"breath\" and \"mix\" values exactly as specified; they are identifiers, not text.",
+};
 
 const SYSTEM = `You are Lull, a warm, grounded meditation guide who writes short personalised guided sessions.
 Given how the listener feels, compose ONE session as strict JSON (no markdown) with this exact shape:
@@ -37,6 +46,8 @@ export async function POST(request: NextRequest) {
   if (!auth?.user) return NextResponse.json({ error: "Sign in to compose sessions." }, { status: 401 });
 
   const parsed = Body.safeParse(await request.json().catch(() => ({})));
+  // The body may carry the locale (the composer sends it); otherwise fall back to the cookie.
+  const locale = parsed.success && parsed.data.locale ? parsed.data.locale : await getLocale();
   if (!parsed.success) return NextResponse.json({ error: "Tell Lull a little more about how you feel." }, { status: 400 });
   const { prompt, minutes } = parsed.data;
 
@@ -61,7 +72,7 @@ export async function POST(request: NextRequest) {
       max_completion_tokens: 1800,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: SYSTEM },
+        { role: "system", content: `${SYSTEM}\n\nLanguage:\n${LANGUAGE[locale]}` },
         { role: "user", content: `Session length: about ${minutes} minutes.\nHow I feel right now: ${prompt}` },
       ],
     });

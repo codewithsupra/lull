@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { CRISIS_TERMS, IntakeInput, PlanOutput, SESSION_REF, levelFor, sessionHref, slotForTime } from "@/lib/care-plan";
+import { CRISIS_TERMS, IntakeInput, LEVEL_COUNT, PlanOutput, SESSION_REF, levelFor, sessionHref, slotForTime } from "@/lib/care-plan";
 
 describe("levelFor", () => {
   it("starts at level 1 Seedling", () => {
-    expect(levelFor(0)).toMatchObject({ level: 1, name: "Seedling", progress: 0, toNext: 60 });
+    expect(levelFor(0)).toMatchObject({ level: 1, index: 0, progress: 0, toNext: 60 });
   });
   it("uses quadratic thresholds (60·n²)", () => {
     expect(levelFor(60).level).toBe(2);
@@ -12,7 +12,7 @@ describe("levelFor", () => {
   });
   it("clamps negative xp and caps the level name", () => {
     expect(levelFor(-50).level).toBe(1);
-    expect(levelFor(10_000_000).name).toBe("Ancient Forest");
+    expect(levelFor(10_000_000).index).toBe(LEVEL_COUNT - 1);
   });
 });
 

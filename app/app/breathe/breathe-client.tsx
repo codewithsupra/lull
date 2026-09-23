@@ -7,11 +7,15 @@ import { logPractice } from "@/lib/data";
 import { useUser } from "@/components/app/user-context";
 import { GuestNote } from "@/components/app/guest-note";
 import { TaskReturn, useTaskCompletion } from "@/components/plan/task-return";
+import { useI18n } from "@/components/i18n/locale-provider";
+import { fmt } from "@/lib/i18n";
 
 const DURATIONS = [1, 3, 5, 10];
 
 export function BreatheClient({ initialPattern, initialMinutes, taskId }: { initialPattern?: string; initialMinutes?: number; taskId?: string }) {
   const user = useUser();
+  const { t } = useI18n();
+  const b = t.tools.breathe;
   const [patternId, setPatternId] = useState(PATTERNS.some((p) => p.id === initialPattern) ? initialPattern! : PATTERNS[0].id);
   const [minutes, setMinutes] = useState(initialMinutes && DURATIONS.includes(initialMinutes) ? initialMinutes : 3);
   const task = useTaskCompletion(taskId);
@@ -29,7 +33,7 @@ export function BreatheClient({ initialPattern, initialMinutes, taskId }: { init
     setDone(elapsed);
     if (user && !loggedRef.current) {
       loggedRef.current = true;
-      await logPractice("breathe", `${pattern.name} breathing`, elapsed);
+      await logPractice("breathe", fmt(b.practiceTitle, { pattern: t.tools.breath.patterns[pattern.id].name }), elapsed);
       if (elapsed >= 45) await task.complete();
     }
   };
@@ -59,28 +63,34 @@ export function BreatheClient({ initialPattern, initialMinutes, taskId }: { init
     setRunning(true);
   };
 
-  const label = running || pacer.elapsed > 0 ? pacer.phase.label : "Ready";
+  const label = running || pacer.elapsed > 0 ? t.tools.breath.phases[pacer.phase.labelKey] : b.ready;
+  const clock = `${Math.floor(remaining / 60)}:${String(Math.floor(remaining % 60)).padStart(2, "0")}`;
   const sub = running
-    ? `${Math.ceil(pacer.phase.seconds * (1 - pacer.progress))}s · ${Math.floor(remaining / 60)}:${String(Math.floor(remaining % 60)).padStart(2, "0")} left`
+    ? fmt(b.timeLeft, { phase: Math.ceil(pacer.phase.seconds * (1 - pacer.progress)), clock })
     : pacer.elapsed > 0
-      ? "paused · space to resume"
-      : "press start or space";
+      ? b.paused
+      : b.pressStart;
 
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_380px] lg:items-center">
       <div>
-        <Orb scale={pacer.scale} label={done ? "Well done." : label} sub={done ? `${Math.round(done / 60) || 1} min of calm` : sub} progress={running ? pacer.progress : 0} />
+        <Orb
+          scale={pacer.scale}
+          label={done ? b.wellDone : label}
+          sub={done ? fmt(b.minOfCalm, { minutes: Math.round(done / 60) || 1 }) : sub}
+          progress={running ? pacer.progress : 0}
+        />
         <div className="mt-8 flex justify-center gap-3">
           {!running ? (
             <button onClick={pacer.elapsed > 0 && !done ? () => setRunning(true) : start} className="rounded-full bg-ink px-8 py-3 text-sm font-semibold text-bg shadow-[0_0_40px_-8px_rgba(142,245,212,0.8)]">
-              {pacer.elapsed > 0 && !done ? "Resume" : done ? "Again" : "Start"}
+              {pacer.elapsed > 0 && !done ? b.resume : done ? b.again : b.start}
             </button>
           ) : (
-            <button onClick={() => setRunning(false)} className="rounded-full border border-white/20 px-8 py-3 text-sm">Pause</button>
+            <button onClick={() => setRunning(false)} className="rounded-full border border-white/20 px-8 py-3 text-sm">{b.pause}</button>
           )}
           {pacer.elapsed > 20 && !done && (
             <button onClick={() => finish(pacer.elapsed)} className="rounded-full border border-white/10 px-6 py-3 text-sm text-muted hover:text-ink">
-              Finish
+              {b.finish}
             </button>
           )}
         </div>
@@ -88,7 +98,7 @@ export function BreatheClient({ initialPattern, initialMinutes, taskId }: { init
 
       <aside className="space-y-6">
         <div>
-          <p className="mono-label">Technique</p>
+          <p className="mono-label">{b.technique}</p>
           <div className="mt-3 space-y-2">
             {PATTERNS.map((p) => (
               <button
@@ -104,16 +114,16 @@ export function BreatheClient({ initialPattern, initialMinutes, taskId }: { init
                 }`}
               >
                 <div className="flex items-baseline justify-between">
-                  <span className="font-semibold">{p.name}</span>
-                  <span className="font-mono text-xs text-muted">{p.tagline}</span>
+                  <span className="font-semibold">{t.tools.breath.patterns[p.id].name}</span>
+                  <span className="font-mono text-xs text-muted">{t.tools.breath.patterns[p.id].tagline}</span>
                 </div>
-                {p.id === patternId && <p className="mt-2 text-xs leading-relaxed text-muted">{p.science}</p>}
+                {p.id === patternId && <p className="mt-2 text-xs leading-relaxed text-muted">{t.tools.breath.patterns[p.id].science}</p>}
               </button>
             ))}
           </div>
         </div>
         <div>
-          <p className="mono-label">Length</p>
+          <p className="mono-label">{b.length}</p>
           <div className="mt-3 grid grid-cols-4 gap-2">
             {DURATIONS.map((d) => (
               <button
@@ -122,17 +132,17 @@ export function BreatheClient({ initialPattern, initialMinutes, taskId }: { init
                 onClick={() => setMinutes(d)}
                 className={`rounded-xl border py-2 text-sm transition disabled:opacity-50 ${d === minutes ? "border-mint/40 bg-mint/[0.06]" : "border-white/10"}`}
               >
-                {d}m
+                {fmt(b.minutesShort, { n: d })}
               </button>
             ))}
           </div>
-          <p className="mt-2 font-mono text-[11px] text-faint">≈ {Math.round((minutes * 60) / cycleSeconds(pattern))} breaths</p>
+          <p className="mt-2 font-mono text-[11px] text-faint">{fmt(b.breaths, { n: Math.round((minutes * 60) / cycleSeconds(pattern)) })}</p>
         </div>
         <label className="flex cursor-pointer items-center justify-between rounded-2xl border border-white/10 px-4 py-3 text-sm">
-          <span>Guiding tones</span>
+          <span>{b.tones}</span>
           <input type="checkbox" checked={tones} onChange={(e) => setTones(e.target.checked)} className="h-4 w-4 accent-[var(--mint)]" />
         </label>
-        {!user && <GuestNote>Sign in to count this toward your streak.</GuestNote>}
+        {!user && <GuestNote>{b.guest}</GuestNote>}
         {taskId && <TaskReturn state={task.state} xp={task.xp} />}
       </aside>
     </div>

@@ -9,81 +9,38 @@ import { z } from "zod";
 
 export type InstrumentId = "phq9" | "gad7" | "sleep";
 
+/**
+ * An instrument's structure only: how many items, what the answer values are, and whether it is
+ * a clinical instrument. All wording lives in `t.screeners.instruments`, so scoring and routing
+ * are identical in every language and a translation can never change a score.
+ */
 export type Instrument = {
   id: InstrumentId;
-  name: string;
-  stem: string;
-  items: string[];
-  options: { label: string; value: number }[];
+  itemCount: number;
+  /** Answer values in display order. */
+  values: number[];
   clinical: boolean;
 };
 
-const FREQ = [
-  { label: "Not at all", value: 0 },
-  { label: "Several days", value: 1 },
-  { label: "More than half the days", value: 2 },
-  { label: "Nearly every day", value: 3 },
-];
+const FREQ_VALUES = [0, 1, 2, 3];
 
-export const PHQ9: Instrument = {
-  id: "phq9",
-  name: "PHQ-9",
-  stem: "Over the last 2 weeks, how often have you been bothered by any of the following problems?",
-  items: [
-    "Little interest or pleasure in doing things",
-    "Feeling down, depressed, or hopeless",
-    "Trouble falling or staying asleep, or sleeping too much",
-    "Feeling tired or having little energy",
-    "Poor appetite or overeating",
-    "Feeling bad about yourself — or that you are a failure or have let yourself or your family down",
-    "Trouble concentrating on things, such as reading the newspaper or watching television",
-    "Moving or speaking so slowly that other people could have noticed? Or the opposite — being so fidgety or restless that you have been moving around a lot more than usual",
-    "Thoughts that you would be better off dead or of hurting yourself in some way",
-  ],
-  options: FREQ,
-  clinical: true,
-};
-
-export const GAD7: Instrument = {
-  id: "gad7",
-  name: "GAD-7",
-  stem: "Over the last 2 weeks, how often have you been bothered by the following problems?",
-  items: [
-    "Feeling nervous, anxious or on edge",
-    "Not being able to stop or control worrying",
-    "Worrying too much about different things",
-    "Trouble relaxing",
-    "Being so restless that it is hard to sit still",
-    "Becoming easily annoyed or irritable",
-    "Feeling afraid as if something awful might happen",
-  ],
-  options: FREQ,
-  clinical: true,
-};
-
-export const SLEEP: Instrument = {
-  id: "sleep",
-  name: "Sleep snapshot",
-  stem: "Thinking about the last 2 weeks…",
-  items: ["How often did it take you a long time to fall asleep?", "How often did you wake in the night and struggle to get back to sleep?", "How often did poor sleep affect your next day?"],
-  options: FREQ,
-  clinical: false,
-};
+export const PHQ9: Instrument = { id: "phq9", itemCount: 9, values: FREQ_VALUES, clinical: true };
+export const GAD7: Instrument = { id: "gad7", itemCount: 7, values: FREQ_VALUES, clinical: true };
+/** Lull's own non-clinical sleep check (the ISI is licensed and not used here). */
+export const SLEEP: Instrument = { id: "sleep", itemCount: 3, values: FREQ_VALUES, clinical: false };
 
 export const INSTRUMENTS: Instrument[] = [PHQ9, GAD7, SLEEP];
 
 /** PHQ-9 item 9 (thoughts of death/self-harm), zero-based. */
 export const PHQ9_RISK_ITEM = 8;
 
-export const DIFFICULTY_OPTIONS = ["Not difficult at all", "Somewhat difficult", "Very difficult", "Extremely difficult"] as const;
-
 export type Severity = "minimal" | "mild" | "moderate" | "moderately_severe" | "severe";
 
 export function score(instrument: Instrument, answers: number[]): number {
-  if (answers.length !== instrument.items.length) throw new Error(`${instrument.name} needs ${instrument.items.length} answers`);
-  const max = Math.max(...instrument.options.map((o) => o.value));
+  if (answers.length !== instrument.itemCount) throw new Error(`${instrument.id} needs ${instrument.itemCount} answers`);
+  const max = Math.max(...instrument.values);
   return answers.reduce((sum, a) => {
-    if (!Number.isInteger(a) || a < 0 || a > max) throw new Error(`${instrument.name} answer out of range`);
+    if (!Number.isInteger(a) || a < 0 || a > max) throw new Error(`${instrument.id} answer out of range`);
     return sum + a;
   }, 0);
 }
@@ -108,45 +65,21 @@ export function severity(id: InstrumentId, total: number): Severity {
   return "minimal";
 }
 
-export const SEVERITY_COPY: Record<Severity, string> = {
-  minimal: "Minimal",
-  mild: "Mild",
-  moderate: "Moderate",
-  moderately_severe: "Moderately severe",
-  severe: "Severe",
-};
-
 // ---------- stepped-care routing ----------
 
 /** T0 urgent · T1 self-guided · T2 guided + peers · T3 therapist recommended */
 export type Tier = 0 | 1 | 2 | 3;
 
+/**
+ * Why a user landed on a tier, as stable keys rather than prose, so the explanation can be
+ * shown in any language. Records written before this change hold English sentences instead;
+ * the UI falls back to printing an unrecognised value as-is.
+ */
+export type ReasonKey = "risk_current" | "phq9_high" | "gad7_high" | "risk_recent" | "not_improving" | "phq9_moderate" | "gad7_moderate" | "minimal";
+
 export type RiskFollowUp = { thoughts_now: boolean; plan_or_intent: boolean };
 
 export type Snapshot = { phq9: number; gad7: number; risk_item: number; at: string };
-
-export const TIERS: Record<Tier, { name: string; headline: string; next: string }> = {
-  0: {
-    name: "Urgent support",
-    headline: "Right now, talking to someone matters most.",
-    next: "Please contact a crisis line or emergency services now. Your safety plan and helplines are one tap away.",
-  },
-  1: {
-    name: "Self-guided",
-    headline: "You're doing okay. Let's build on it.",
-    next: "Your Care Plan, breathing and sleep tools are a great fit. We'll check in again in two weeks.",
-  },
-  2: {
-    name: "Guided support",
-    headline: "Things are weighing on you. You don't have to do this alone.",
-    next: "A structured Care Plan plus a peer circle is recommended. If it doesn't ease in a few weeks, we'll suggest a therapist.",
-  },
-  3: {
-    name: "Therapist recommended",
-    headline: "It would really help to talk to a professional.",
-    next: "Your answers suggest support from a qualified therapist or doctor would help. Lull will keep supporting you alongside them.",
-  },
-};
 
 /**
  * Routes a user to a care tier.
@@ -157,17 +90,17 @@ export const TIERS: Record<Tier, { name: string; headline: string; next: string 
  * - T2 for PHQ-9 or GAD-7 in the moderate range (10–14).
  * - T1 otherwise.
  */
-export function route(current: Snapshot, history: Snapshot[] = [], followUp?: RiskFollowUp): { tier: Tier; risk: boolean; reasons: string[] } {
-  const reasons: string[] = [];
+export function route(current: Snapshot, history: Snapshot[] = [], followUp?: RiskFollowUp): { tier: Tier; risk: boolean; reasons: ReasonKey[] } {
+  const reasons: ReasonKey[] = [];
   const risk = current.risk_item >= 1;
 
   if (risk && (current.risk_item >= 2 || followUp?.thoughts_now || followUp?.plan_or_intent)) {
-    return { tier: 0, risk, reasons: ["Current thoughts of self-harm reported"] };
+    return { tier: 0, risk, reasons: ["risk_current"] };
   }
 
-  if (current.phq9 >= 15) reasons.push("PHQ-9 in the moderately severe or severe range");
-  if (current.gad7 >= 15) reasons.push("GAD-7 in the severe range");
-  if (risk) reasons.push("Thoughts of death or self-harm reported in the last two weeks");
+  if (current.phq9 >= 15) reasons.push("phq9_high");
+  if (current.gad7 >= 15) reasons.push("gad7_high");
+  if (risk) reasons.push("risk_recent");
 
   const baseline = [...history].sort((a, b) => a.at.localeCompare(b.at))[0];
   if (baseline) {
@@ -175,15 +108,15 @@ export function route(current: Snapshot, history: Snapshot[] = [], followUp?: Ri
     const stillModerate = current.phq9 >= 10 || current.gad7 >= 10;
     const improvedPhq = baseline.phq9 - current.phq9 >= 5;
     const improvedGad = baseline.gad7 - current.gad7 >= 4;
-    if (days >= 42 && stillModerate && !improvedPhq && !improvedGad) reasons.push("Not improving after 6 weeks of self-help");
+    if (days >= 42 && stillModerate && !improvedPhq && !improvedGad) reasons.push("not_improving");
   }
   if (reasons.length) return { tier: 3, risk, reasons };
 
-  if (current.phq9 >= 10) reasons.push("PHQ-9 in the moderate range");
-  if (current.gad7 >= 10) reasons.push("GAD-7 in the moderate range");
+  if (current.phq9 >= 10) reasons.push("phq9_moderate");
+  if (current.gad7 >= 10) reasons.push("gad7_moderate");
   if (reasons.length) return { tier: 2, risk, reasons };
 
-  return { tier: 1, risk, reasons: ["Scores in the minimal-to-mild range"] };
+  return { tier: 1, risk, reasons: ["minimal"] };
 }
 
 export const RESCREEN_DAYS = 14;
@@ -215,7 +148,7 @@ export type ScreenerRecord = {
   followup: RiskFollowUp | null;
   tier: Tier;
   risk: boolean;
-  reasons: string[];
+  reasons: (ReasonKey | string)[];
   at: string;
 };
 

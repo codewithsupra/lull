@@ -7,8 +7,10 @@ import { CheckinCard } from "@/components/app/checkin-card";
 import { MoodChart } from "@/components/app/mood-chart";
 import { GuestNote } from "@/components/app/guest-note";
 import { fetchCareStats, type CareStats } from "@/lib/care-client";
+import { useI18n } from "@/components/i18n/locale-provider";
+import { fmt, type Messages } from "@/lib/i18n";
 import { levelFor } from "@/lib/care-plan";
-import { TIERS, type Tier } from "@/lib/screeners";
+import { type Tier } from "@/lib/screeners";
 import {
   fetchCheckins,
   fetchRecentPractice,
@@ -22,25 +24,28 @@ import {
 
 const KIND_ICON = { breathe: "◎", soundscape: "∿", composed: "✦", sleep: "☾" } as const;
 
-function greeting() {
+function greeting(t: Messages) {
   const h = new Date().getHours();
-  if (h < 5) return "Still up";
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  if (h < 22) return "Good evening";
-  return "Winding down";
+  const g = t.today.greeting;
+  if (h < 5) return g.stillUp;
+  if (h < 12) return g.morning;
+  if (h < 17) return g.afternoon;
+  if (h < 22) return g.evening;
+  return g.windingDown;
 }
 
-function suggestion(): { title: string; body: string; href: string } {
+function suggestion(t: Messages): { title: string; body: string; href: string } {
   const h = new Date().getHours();
-  if (h >= 21 || h < 5) return { title: "Sleep, composed", body: "A 4-7-8 session with warm rain that fades out on its own.", href: "/app/compose?q=I%20want%20to%20fall%20asleep%20and%20let%20go%20of%20today" };
-  if (h < 11) return { title: "Set the tone", body: "Three minutes of coherent breathing before the inbox.", href: "/app/breathe" };
-  if (h < 17) return { title: "Midday reset", body: "Try a physiological sigh when stress spikes. It takes about 60 seconds.", href: "/app/breathe" };
-  return { title: "Leave the day at the door", body: "Tell Lull about your day and let it compose the wind-down.", href: "/app/compose" };
+  const s = t.today.suggestions;
+  if (h >= 21 || h < 5) return { ...s.sleep, href: `/app/compose?q=${encodeURIComponent(s.sleepQuery)}` };
+  if (h < 11) return { ...s.morning, href: "/app/breathe" };
+  if (h < 17) return { ...s.midday, href: "/app/breathe" };
+  return { ...s.evening, href: "/app/compose" };
 }
 
 export default function TodayPage() {
   const user = useUser();
+  const { t, tag } = useI18n();
   const [stats, setStats] = useState<Stats | null>(null);
   const [recent, setRecent] = useState<PracticeSession[]>([]);
   const [checkins, setCheckins] = useState<MoodCheckin[]>([]);
@@ -51,8 +56,8 @@ export default function TodayPage() {
     () => true,
     () => false,
   );
-  const greet = mounted ? greeting() : "Hello";
-  const tip = mounted ? suggestion() : null;
+  const greet = mounted ? greeting(t) : t.today.greeting.hello;
+  const tip = mounted ? suggestion(t) : null;
 
   useEffect(() => {
     if (!user) return;
@@ -66,52 +71,54 @@ export default function TodayPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((j: { latest: { tier: Tier } | null; next_due: string | null } | null) => {
         if (!j) return;
-        setCheck({ due: !j.next_due || Date.parse(j.next_due) <= Date.now(), tierName: j.latest ? TIERS[j.latest.tier].name : null });
+        setCheck({ due: !j.next_due || Date.parse(j.next_due) <= Date.now(), tierName: j.latest ? t.screeners.tiers[j.latest.tier].name : null });
       })
       .catch(() => {});
-  }, [user]);
+  }, [user, t]);
 
   const firstName = user?.name?.split(" ")[0] ?? user?.email?.split("@")[0];
 
   const tiles = [
-    { label: "day streak", value: stats?.streak ?? 0, accent: "text-lime" },
-    { label: "minutes calm", value: stats?.total_minutes ?? 0, accent: "text-mint" },
-    { label: "sessions", value: stats?.session_count ?? 0, accent: "text-sky" },
-    { label: "check-ins", value: stats?.checkin_count ?? 0, accent: "text-lilac" },
+    { label: t.today.tiles.streak, value: stats?.streak ?? 0, accent: "text-lime" },
+    { label: t.today.tiles.minutes, value: stats?.total_minutes ?? 0, accent: "text-mint" },
+    { label: t.today.tiles.sessions, value: stats?.session_count ?? 0, accent: "text-sky" },
+    { label: t.today.tiles.checkins, value: stats?.checkin_count ?? 0, accent: "text-lilac" },
   ];
 
   return (
     <div className="space-y-8">
       <div>
-        <p className="mono-label">{new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</p>
+        <p className="mono-label">{new Date().toLocaleDateString(tag, { weekday: "long", month: "long", day: "numeric" })}</p>
         <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight sm:text-5xl">
           {greet}
           {firstName ? `, ${firstName}` : ""}.
         </h1>
       </div>
 
-      {!user && <GuestNote>You&apos;re exploring as a guest. Breathe and Sounds work fully. Sign up to save your streak, check-ins and composed sessions.</GuestNote>}
+      {!user && <GuestNote>{t.today.guestNote}</GuestNote>}
 
       <Link href="/app/plan" className="group glass relative flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-3xl p-6">
         <div className="absolute -left-10 -top-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(200,255,110,0.22),transparent_70%)] blur-2xl transition-transform duration-700 group-hover:scale-125" />
         {care?.plan ? (
           <>
             <div className="relative">
-              <p className="mono-label !text-lime">your plan · week {care.plan.week} of 4</p>
+              <p className="mono-label !text-lime">{fmt(t.today.plan.label, { week: care.plan.week })}</p>
               <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold">
-                {care.today.done}/{care.today.total} done today
+                {fmt(t.today.plan.doneToday, { done: care.today.done, total: care.today.total })}
               </p>
             </div>
             <div className="relative text-right font-mono text-xs text-muted">
-              <div className="text-lime">Lv {levelFor(care.xp).level} · {care.xp} XP</div>
-              <div>🔥 {care.streak} day streak</div>
+              <div className="text-lime">
+                {t.common.level} {levelFor(care.xp).level} · {care.xp} {t.common.xp}
+              </div>
+              <div>{fmt(t.today.plan.streak, { days: care.streak })}</div>
             </div>
           </>
         ) : (
           <div className="relative">
-            <p className="mono-label !text-lime">new · care plan</p>
-            <p className="mt-1 font-[family-name:var(--font-display)] text-xl font-semibold sm:text-2xl">Turn your prescription into a daily plan →</p>
-            <p className="mt-1 text-sm text-muted">Scan it or describe your diagnosis. Private and encrypted, with XP for every step.</p>
+            <p className="mono-label !text-lime">{t.today.plan.newLabel}</p>
+            <p className="mt-1 font-[family-name:var(--font-display)] text-xl font-semibold sm:text-2xl">{t.today.plan.newTitle}</p>
+            <p className="mt-1 text-sm text-muted">{t.today.plan.newBody}</p>
           </div>
         )}
       </Link>
@@ -119,10 +126,10 @@ export default function TodayPage() {
       {check?.due && (
         <Link href="/app/check" className="glass group flex flex-wrap items-center justify-between gap-3 rounded-3xl border-sky/25 p-5">
           <div>
-            <p className="mono-label !text-sky">{check.tierName ? "your 2-week check is due" : "start here · 3 minutes"}</p>
-            <p className="mt-1 text-lg">{check.tierName ? "See how far you've come since last time." : "Take the wellbeing check to find the right support for you."}</p>
+            <p className="mono-label !text-sky">{check.tierName ? t.today.check.dueLabel : t.today.check.firstLabel}</p>
+            <p className="mt-1 text-lg">{check.tierName ? t.today.check.dueBody : t.today.check.firstBody}</p>
           </div>
-          <span className="rounded-full bg-sky px-4 py-2 text-sm font-semibold text-bg transition group-hover:translate-x-0.5">Begin →</span>
+          <span className="rounded-full bg-sky px-4 py-2 text-sm font-semibold text-bg transition group-hover:translate-x-0.5">{t.common.begin}</span>
         </Link>
       )}
 
@@ -140,17 +147,17 @@ export default function TodayPage() {
           {tip && (
             <Link href={tip.href} className="group glass relative block overflow-hidden rounded-3xl p-7">
               <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(142,245,212,0.35),transparent_70%)] blur-2xl transition-transform duration-700 group-hover:scale-125" />
-              <p className="mono-label !text-mint">suggested now</p>
+              <p className="mono-label !text-mint">{t.today.suggested}</p>
               <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold">{tip.title}</h2>
               <p className="mt-2 max-w-md text-muted">{tip.body}</p>
-              <span className="mt-5 inline-block text-sm text-ink transition group-hover:translate-x-1">Begin →</span>
+              <span className="mt-5 inline-block text-sm text-ink transition group-hover:translate-x-1">{t.common.begin}</span>
             </Link>
           )}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { href: "/app/compose", icon: "✦", label: "Compose" },
-              { href: "/app/breathe", icon: "◎", label: "Breathe" },
-              { href: "/app/sounds", icon: "∿", label: "Sounds" },
+              { href: "/app/compose", icon: "✦", label: t.nav.compose },
+              { href: "/app/breathe", icon: "◎", label: t.nav.breathe },
+              { href: "/app/sounds", icon: "∿", label: t.nav.sounds },
             ].map((a) => (
               <Link key={a.href} href={a.href} className="glass group rounded-2xl p-5 text-center transition hover:border-white/20">
                 <div className="text-2xl transition group-hover:scale-110">{a.icon}</div>
@@ -160,8 +167,8 @@ export default function TodayPage() {
           </div>
           <div className="glass rounded-3xl p-6">
             <div className="flex items-baseline justify-between">
-              <p className="mono-label">Mood · last 14 check-ins</p>
-              <Link href="/app/journal" className="font-mono text-xs text-muted hover:text-ink">journal →</Link>
+              <p className="mono-label">{t.today.moodHeading}</p>
+              <Link href="/app/journal" className="font-mono text-xs text-muted hover:text-ink">{t.today.journalLink}</Link>
             </div>
             <div className="mt-4">
               <MoodChart checkins={checkins} />
@@ -178,9 +185,9 @@ export default function TodayPage() {
             }}
           />
           <div className="glass rounded-3xl p-6">
-            <p className="mono-label">Recent practice</p>
+            <p className="mono-label">{t.today.recentHeading}</p>
             {recent.length === 0 ? (
-              <p className="mt-3 text-sm text-muted">{user ? "Your sessions will show up here." : "Sign in to keep a history."}</p>
+              <p className="mt-3 text-sm text-muted">{user ? t.today.recentEmpty : t.today.recentGuest}</p>
             ) : (
               <ul className="mt-3 divide-y divide-white/[0.06]">
                 {recent.map((r) => (

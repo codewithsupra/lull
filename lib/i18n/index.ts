@@ -12,4 +12,4 @@ export const messagesFor = (locale: Locale): Messages => DICTIONARIES[locale] ??
 export const tagFor = (locale: Locale): string => LOCALE_META[locale].tag;
 
 export * from "./config";
-export { fmt, placeholders, plural, type Dict } from "./dict";
+export { fmt, placeholders, plural, splitAround, type Dict } from "./dict";

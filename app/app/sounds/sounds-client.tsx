@@ -7,6 +7,8 @@ import { SOUND_PRESETS } from "@/lib/audio/presets";
 import { useUser } from "@/components/app/user-context";
 import { GuestNote } from "@/components/app/guest-note";
 import { TaskReturn, useTaskCompletion } from "@/components/plan/task-return";
+import { useI18n } from "@/components/i18n/locale-provider";
+import { fmt } from "@/lib/i18n";
 
 const PRESETS = SOUND_PRESETS;
 
@@ -17,6 +19,8 @@ const now = () => Date.now();
 
 export function SoundsClient({ initialPreset, taskId }: { initialPreset?: string; taskId?: string }) {
   const user = useUser();
+  const { t } = useI18n();
+  const snd = t.tools.sounds;
   const task = useTaskCompletion(taskId);
   const suggested = PRESETS.find((p) => p.slug === initialPreset);
   const engine = typeof window === "undefined" ? null : getEngine();
@@ -40,16 +44,17 @@ export function SoundsClient({ initialPreset, taskId }: { initialPreset?: string
         const top = Object.entries(getEngine().mix)
           .filter(([, v]) => (v ?? 0) > 0)
           .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0))
-          .map(([k]) => LAYERS.find((l) => l.id === k)?.label)
+          .map(([k]) => (LAYERS.find((l) => l.id === k) ? t.tools.layers[k as LayerId].label : null))
+          .filter(Boolean)
           .slice(0, 2)
           .join(" + ");
-        void logPractice(timer ? "sleep" : "soundscape", top || "Soundscape", secs);
+        void logPractice(timer ? "sleep" : "soundscape", top || snd.practiceTitle, secs);
         if (secs >= 60) void task.complete();
       }
       startedAt.current = null;
       setTimerLeft(null);
     },
-    [user, timer, task],
+    [user, timer, task, t, snd.practiceTitle],
   );
 
   const set = async (id: LayerId, v: number) => {
@@ -127,31 +132,33 @@ export function SoundsClient({ initialPreset, taskId }: { initialPreset?: string
           <canvas ref={canvasRef} width={1040} height={1040} className="aspect-square w-full" />
           <div className="absolute inset-0 grid place-items-center text-center">
             <div>
-              <div className="font-[family-name:var(--font-display)] text-2xl font-semibold">{playing ? "Listening" : "Silence"}</div>
+              <div className="font-[family-name:var(--font-display)] text-2xl font-semibold">{playing ? snd.listening : snd.silence}</div>
               <div className="mono-label mt-2">
                 {shownLeft !== null
-                  ? `fades out in ${Math.floor(Math.max(0, shownLeft) / 60)}:${String(Math.max(0, shownLeft) % 60).padStart(2, "0")}`
+                  ? fmt(snd.fadesIn, {
+                      clock: `${Math.floor(Math.max(0, shownLeft) / 60)}:${String(Math.max(0, shownLeft) % 60).padStart(2, "0")}`,
+                    })
                   : playing
-                    ? "live synthesis"
-                    : "pick a preset or raise a layer"}
+                    ? snd.liveSynthesis
+                    : snd.pickPreset}
               </div>
             </div>
           </div>
         </div>
         {suggested && !playing && task.state === "idle" && (
           <button onClick={() => applyPreset(suggested.mix)} className="mb-3 rounded-full bg-lilac px-6 py-2.5 text-sm font-semibold text-bg shadow-[0_0_40px_-8px_var(--lilac)]">
-            ▶ Start {suggested.name} from your plan
+            {fmt(snd.startFromPlan, { preset: snd.presets[suggested.slug] })}
           </button>
         )}
         <div className="mt-2 flex flex-wrap justify-center gap-2">
           {PRESETS.map((p) => (
-            <button key={p.name} onClick={() => applyPreset(p.mix)} className="rounded-full border border-white/12 px-4 py-2 text-sm text-ink/85 transition hover:border-mint/50 hover:text-mint">
-              {p.name}
+            <button key={p.slug} onClick={() => applyPreset(p.mix)} className="rounded-full border border-white/12 px-4 py-2 text-sm text-ink/85 transition hover:border-mint/50 hover:text-mint">
+              {snd.presets[p.slug]}
             </button>
           ))}
           {playing && (
             <button onClick={() => stop(2)} className="rounded-full bg-ink px-5 py-2 text-sm font-semibold text-bg">
-              ■ Stop
+              {snd.stop}
             </button>
           )}
         </div>
@@ -159,17 +166,17 @@ export function SoundsClient({ initialPreset, taskId }: { initialPreset?: string
 
       <aside className="space-y-6">
         <div className="glass space-y-5 rounded-3xl p-6">
-          <p className="mono-label">Layers</p>
+          <p className="mono-label">{snd.layers}</p>
           {LAYERS.map((l) => {
             const v = mix[l.id] ?? 0;
             return (
               <div key={l.id}>
                 <div className="mb-2 flex items-baseline justify-between text-sm">
-                  <span className={v > 0 ? "text-ink" : "text-muted"}>{l.label}</span>
-                  <span className="font-mono text-[11px] text-faint">{l.hint}</span>
+                  <span className={v > 0 ? "text-ink" : "text-muted"}>{t.tools.layers[l.id].label}</span>
+                  <span className="font-mono text-[11px] text-faint">{t.tools.layers[l.id].hint}</span>
                 </div>
                 <input
-                  aria-label={`${l.label} volume`}
+                  aria-label={fmt(snd.volumeLabel, { layer: t.tools.layers[l.id].label })}
                   type="range"
                   min={0}
                   max={100}
@@ -183,7 +190,7 @@ export function SoundsClient({ initialPreset, taskId }: { initialPreset?: string
           })}
         </div>
         <div>
-          <p className="mono-label">Sleep timer</p>
+          <p className="mono-label">{snd.sleepTimer}</p>
           <div className="mt-3 grid grid-cols-4 gap-2">
             {TIMERS.map((m) => (
               <button
@@ -194,13 +201,13 @@ export function SoundsClient({ initialPreset, taskId }: { initialPreset?: string
                 }}
                 className={`rounded-xl border py-2 text-sm transition ${m === timer ? "border-lilac/50 bg-lilac/10" : "border-white/10"}`}
               >
-                {m ? `${m}m` : "Off"}
+                {m ? fmt(snd.minutesShort, { n: m }) : snd.off}
               </button>
             ))}
           </div>
         </div>
-        {!user && <GuestNote>Sign in to log listening time.</GuestNote>}
-        {taskId && <TaskReturn state={task.state} xp={task.xp} hint="Listen for at least a minute, then stop to collect your XP." />}
+        {!user && <GuestNote>{snd.guest}</GuestNote>}
+        {taskId && <TaskReturn state={task.state} xp={task.xp} hint={snd.taskHint} />}
       </aside>
     </div>
   );

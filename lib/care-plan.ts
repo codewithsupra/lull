@@ -1,42 +1,41 @@
 import { z } from "zod";
+import { LOCALES } from "@/lib/i18n/config";
 
 // ---------- shared constants (client + server) ----------
 
 export const CONSENT_VERSION = "2026-09-v1";
 
-export const CATEGORIES = [
-  { id: "anxiety", label: "Anxiety", hint: "Worry, panic, racing thoughts" },
-  { id: "insomnia", label: "Sleep trouble", hint: "Insomnia, waking at night" },
-  { id: "stress", label: "Stress & burnout", hint: "Overwhelm, exhaustion" },
-  { id: "low_mood", label: "Low mood", hint: "Mild depression, flatness" },
-  { id: "adhd", label: "Focus / ADHD", hint: "Attention, restlessness" },
-  { id: "other", label: "Something else", hint: "We'll build a general wellbeing plan" },
-] as const;
+/** Condition categories. Labels and hints live in `t.plan.categories` (FR8). */
+export const CATEGORIES = [{ id: "anxiety" }, { id: "insomnia" }, { id: "stress" }, { id: "low_mood" }, { id: "adhd" }, { id: "other" }] as const;
 export type Category = (typeof CATEGORIES)[number]["id"];
 
+/** Goal keys; the wording the user picks lives in `t.plan.goals`. */
 export const GOALS = [
-  "Fall asleep faster",
-  "Stay asleep",
-  "Fewer panic moments",
-  "Calmer mornings",
-  "More energy",
-  "Take meds on time",
-  "Better focus",
-  "Less overthinking",
-  "Understand my diagnosis",
+  "sleep_faster",
+  "stay_asleep",
+  "fewer_panic",
+  "calmer_mornings",
+  "more_energy",
+  "meds_on_time",
+  "better_focus",
+  "less_overthinking",
+  "understand_diagnosis",
 ] as const;
+export type Goal = (typeof GOALS)[number];
 
 export const XP = { medication: 20, habit: 15, session: 30, learn: 10, reflect: 10 } as const;
 export const DAY_BONUS = 50;
 export type TaskKind = keyof typeof XP;
 export type Slot = "morning" | "afternoon" | "evening" | "night";
 
-export const LEVELS = ["Seedling", "Sprout", "Sapling", "Bloom", "Grove", "Canopy", "Old Growth", "Ancient Forest"];
+/** Number of named levels; the names themselves live in `t.plan.levels`. */
+export const LEVEL_COUNT = 8;
+
 export function levelFor(xp: number) {
   const level = Math.floor(Math.sqrt(Math.max(0, xp) / 60)) + 1;
   const floor = 60 * (level - 1) ** 2;
   const next = 60 * level ** 2;
-  return { level, name: LEVELS[Math.min(level - 1, LEVELS.length - 1)], progress: (xp - floor) / (next - floor), toNext: next - xp };
+  return { level, index: Math.min(level - 1, LEVEL_COUNT - 1), progress: (xp - floor) / (next - floor), toNext: next - xp };
 }
 
 export const SESSION_REF = /^(breathe:(coherent|box|478|sigh):(1|3|5|10)|sounds:(night-rain|low-tide|cabin-fire|deep-focus|temple)|compose)$/;
@@ -62,11 +61,13 @@ export const IntakeInput = z.object({
   severity: z.number().int().min(1).max(5),
   wake: hhmm,
   sleep: hhmm,
-  goals: z.array(z.string().max(60)).max(6).default([]),
+  goals: z.array(z.enum(GOALS)).max(6).default([]),
   text: z.string().trim().max(1200).default(""),
   medications: z.array(MedicationInput).max(12).default([]),
   timezone: z.string().max(64).default("UTC"),
   today: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  /** Language the plan's content should be written in (FR8). */
+  locale: z.enum(LOCALES).default("en"),
   consent: z.literal(true),
 });
 export type IntakeInput = z.infer<typeof IntakeInput>;
@@ -135,7 +136,7 @@ export type Outline = {
   severity: number;
   wake: string;
   sleep: string;
-  goals: string[];
+  goals: Goal[];
   roadmap: PlanOutput["roadmap"];
   doctor_questions: string[];
   weeks: Record<number, { theme: string; focus: string; learn: WeekPlan["learn"] }>;

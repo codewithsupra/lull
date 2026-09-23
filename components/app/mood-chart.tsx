@@ -1,7 +1,9 @@
+import { useI18n } from "@/components/i18n/locale-provider";
 import { MOODS, type MoodCheckin } from "@/lib/data";
 
 /** Smooth area chart of mood over the most recent check-ins (oldest → newest). */
 export function MoodChart({ checkins, height = 140 }: { checkins: MoodCheckin[]; height?: number }) {
+  const { t, tag } = useI18n();
   const pts = [...checkins].reverse();
   const W = 600;
   const H = height;
@@ -9,7 +11,7 @@ export function MoodChart({ checkins, height = 140 }: { checkins: MoodCheckin[];
   if (pts.length < 2) {
     return (
       <div className="grid place-items-center rounded-2xl border border-dashed border-white/10 text-sm text-muted" style={{ height }}>
-        Your mood curve appears after two check-ins.
+        {t.app.journal.curveEmpty}
       </div>
     );
   }
@@ -40,7 +42,7 @@ export function MoodChart({ checkins, height = 140 }: { checkins: MoodCheckin[];
       <path d={d} fill="none" stroke="url(#moodLine)" strokeWidth="2.5" strokeLinecap="round" />
       {pts.map((p, i) => (
         <circle key={p.id} cx={x(i)} cy={y(p.mood)} r="4" fill={MOODS[p.mood - 1].color} stroke="#03050b" strokeWidth="2">
-          <title>{`${MOODS[p.mood - 1].label} · ${new Date(p.created_at).toLocaleString()}`}</title>
+          <title>{`${t.tools.checkin.moods[p.mood as 1 | 2 | 3 | 4 | 5]} · ${new Date(p.created_at).toLocaleString(tag)}`}</title>
         </circle>
       ))}
     </svg>

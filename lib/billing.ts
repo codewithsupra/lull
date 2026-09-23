@@ -56,12 +56,13 @@ export const FREE_PLAN: Plan = {
 export type Feature = "scan" | "replan" | "insight" | "compose" | "companion";
 
 /** Free tier keeps everything that matters for safety and a real first win. */
-export const FEATURES: Record<Feature, { free: false | number; pro: number; label: string }> = {
-  scan: { free: false, pro: 20, label: "Prescription scan" },
-  replan: { free: false, pro: 5, label: "Adaptive weekly re-plans" },
-  insight: { free: false, pro: 20, label: "AI pattern insights" },
-  compose: { free: 3, pro: 15, label: "AI-composed sessions" },
-  companion: { free: 15, pro: 200, label: "Talk to Lull" },
+/** Limits only. Feature names live in `t.app.billing.features`. */
+export const FEATURES: Record<Feature, { free: false | number; pro: number }> = {
+  scan: { free: false, pro: 20 },
+  replan: { free: false, pro: 5 },
+  insight: { free: false, pro: 20 },
+  compose: { free: 3, pro: 15 },
+  companion: { free: 15, pro: 200 },
 };
 
 /** Daily allowance for a feature on this plan; 0 means locked. */
@@ -70,13 +71,4 @@ export function allowance(plan: Pick<Plan, "pro">, feature: Feature): number {
   return plan.pro ? f.pro : f.free === false ? 0 : f.free;
 }
 
-export const PRO_PERKS = [
-  "Talk to Lull whenever you need to",
-  "Scan your prescription into a plan",
-  "Adaptive re-plans every week",
-  "15 AI-composed sessions a day",
-  "AI insights on your mood patterns",
-  "Doctor report & full night garden (soon)",
-];
-
-export const FREE_PERKS = ["Breathing, soundscapes & sleep timer", "Wellbeing check & care path", "Crisis tools, always", "Your Care Plan with XP & garden", "3 AI-composed sessions a day", "15 companion messages a day"];
+// Perk lists live in `t.app.billing.freePerks` / `proPerks`.

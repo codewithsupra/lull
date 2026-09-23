@@ -1,16 +1,47 @@
 import { describe, expect, it } from "vitest";
 import { GAD7, PHQ9, PHQ9_RISK_ITEM, SLEEP, ScreenerSubmission, evaluate, nextDue, route, score, severity, type Snapshot } from "@/lib/screeners";
+import { DICTIONARIES, LOCALES } from "@/lib/i18n";
 
 const snap = (phq9: number, gad7: number, risk_item = 0, at = "2026-09-21T00:00:00Z"): Snapshot => ({ phq9, gad7, risk_item, at });
 
 describe("instruments", () => {
   it("have the published item counts", () => {
-    expect(PHQ9.items).toHaveLength(9);
-    expect(GAD7.items).toHaveLength(7);
-    expect(PHQ9.items[PHQ9_RISK_ITEM]).toMatch(/better off dead|hurting yourself/);
+    expect(PHQ9.itemCount).toBe(9);
+    expect(GAD7.itemCount).toBe(7);
+    expect(SLEEP.itemCount).toBe(3);
   });
   it("mark the sleep snapshot as non-clinical", () => {
     expect(SLEEP.clinical).toBe(false);
+  });
+
+  // A locale that is missing even one item would silently shorten a clinical instrument.
+  it.each(LOCALES)("has every item and answer option worded in %s", (locale) => {
+    const sc = DICTIONARIES[locale].screeners;
+    for (const inst of [PHQ9, GAD7, SLEEP]) {
+      expect(sc.instruments[inst.id].items, `${locale}.${inst.id}`).toHaveLength(inst.itemCount);
+      for (const item of sc.instruments[inst.id].items) expect(item.length).toBeGreaterThan(8);
+      expect(sc.instruments[inst.id].stem.length).toBeGreaterThan(8);
+    }
+    expect(sc.frequency).toHaveLength(PHQ9.values.length);
+    expect(sc.difficulty.options).toHaveLength(4);
+  });
+
+  it.each(LOCALES)("keeps the self-harm wording in PHQ-9 item 9 in %s", (locale) => {
+    // This is the item that drives the crisis path; a euphemistic translation would hide it.
+    const item = DICTIONARIES[locale].screeners.instruments.phq9.items[PHQ9_RISK_ITEM];
+    expect(item, locale).toMatch(/better off dead|hurting yourself|मर जाना|नुकसान/);
+  });
+
+  it.each(LOCALES)("explains every routing reason and care tier in %s", (locale) => {
+    const sc = DICTIONARIES[locale].screeners;
+    for (const key of ["risk_current", "phq9_high", "gad7_high", "risk_recent", "not_improving", "phq9_moderate", "gad7_moderate", "minimal"] as const) {
+      expect(sc.reasons[key], `${locale}.${key}`).toBeTruthy();
+    }
+    for (const tier of [0, 1, 2, 3] as const) {
+      expect(sc.tiers[tier].name, `${locale}.tier${tier}`).toBeTruthy();
+      expect(sc.tiers[tier].headline.length).toBeGreaterThan(10);
+      expect(sc.tiers[tier].next.length).toBeGreaterThan(20);
+    }
   });
 });
 
@@ -129,7 +160,7 @@ describe("evaluate", () => {
     const now = evaluate(ScreenerSubmission.parse({ ...zeros, phq9: [2, 2, 2, 2, 2, 1, 0, 0, 0] }), [base], "2026-09-21T00:00:00Z");
     expect(base.tier).toBe(2);
     expect(now.tier).toBe(3);
-    expect(now.reasons).toContain("Not improving after 6 weeks of self-help");
+    expect(now.reasons).toContain("not_improving");
   });
 
   it("rejects malformed submissions", () => {

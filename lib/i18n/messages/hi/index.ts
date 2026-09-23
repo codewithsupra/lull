@@ -5,7 +5,11 @@ import today from "./today";
 import companion from "./companion";
 import crisis from "./crisis";
 import safety from "./safety";
+import screeners from "./screeners";
+import plan from "./plan";
+import tools from "./tools";
+import app from "./app";
 
-const hi = { common, nav, meta, today, companion, crisis, safety };
+const hi = { common, nav, meta, today, companion, crisis, safety, screeners, plan, tools, app };
 
 export default hi;

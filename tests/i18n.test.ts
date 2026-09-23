@@ -15,6 +15,9 @@ function leaves(node: unknown, path = ""): Leaf[] {
 
 const DEVANAGARI = /[ऀ-ॿ]/;
 
+/** `{placeholder}` names are code identifiers, not visible text, so they never count as English. */
+const visible = (value: string) => value.replace(/\{\w+\}/g, " ");
+
 /**
  * Latin text that is allowed to stay Latin in a non-Latin locale: brand names, clinical
  * instrument names, keywords a user must literally text, and units.
@@ -85,7 +88,7 @@ describe("dictionary parity", () => {
   it("has no untranslated English left in Hindi", () => {
     const untranslated = leaves(DICTIONARIES.hi)
       .filter((l) => {
-        const stripped = l.value.replace(ALLOWED_LATIN, "").replace(/[^A-Za-zऀ-ॿ]/g, "");
+        const stripped = visible(l.value).replace(ALLOWED_LATIN, "").replace(/[^A-Za-zऀ-ॿ]/g, "");
         // A Latin run of 4+ letters that survived the allowlist means a string was missed.
         return /[A-Za-z]{4,}/.test(stripped) && !DEVANAGARI.test(l.value);
       })
@@ -96,7 +99,10 @@ describe("dictionary parity", () => {
   it("writes Hindi in Devanagari, not romanised Hinglish", () => {
     const romanised = leaves(DICTIONARIES.hi)
       // Strings of real prose (not codes, numbers or single tokens) should carry Devanagari.
-      .filter((l) => l.value.trim().split(/\s+/).length >= 3 && !DEVANAGARI.test(l.value))
+      .filter((l) => {
+        const text = visible(l.value).replace(ALLOWED_LATIN, "").trim();
+        return text.split(/\s+/).filter((w) => /[A-Za-z\u0900-\u097F]/.test(w)).length >= 3 && !DEVANAGARI.test(text);
+      })
       .map((l) => `${l.path}: ${l.value}`);
     expect(romanised).toEqual([]);
   });

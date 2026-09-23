@@ -4,14 +4,19 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useUser } from "@/components/app/user-context";
 import { MoodChart } from "@/components/app/mood-chart";
+import { useI18n } from "@/components/i18n/locale-provider";
+import { fmt, splitAround } from "@/lib/i18n";
 import { GuestNote } from "@/components/app/guest-note";
 import { handlePaywall } from "@/lib/billing-client";
-import { MOODS, deleteCheckin, fetchCheckins, type MoodCheckin } from "@/lib/data";
+import { MOODS, deleteCheckin, fetchCheckins, type MoodCheckin, type TagId } from "@/lib/data";
 
 type Insight = { headline: string; observations: string[]; suggestion: { text: string; action: "breathe" | "sounds" | "compose" } };
 
 export default function JournalPage() {
   const user = useUser();
+  const { t, tag } = useI18n();
+  const j = t.app.journal;
+  const [emptyBefore, emptyAfter] = splitAround(j.empty);
   const [checkins, setCheckins] = useState<MoodCheckin[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [insight, setInsight] = useState<Insight | null>(null);
@@ -36,7 +41,7 @@ export default function JournalPage() {
       if (!res.ok) throw new Error(json.error);
       setInsight(json);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : t.common.errors.generic);
     } finally {
       setThinking(false);
     }
@@ -68,8 +73,8 @@ export default function JournalPage() {
   if (!user) {
     return (
       <div className="space-y-6">
-        <h1 className="font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight">Journal</h1>
-        <GuestNote>Your mood journal and AI insights live in your account.</GuestNote>
+        <h1 className="font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight">{t.nav.journal}</h1>
+        <GuestNote>{j.guest}</GuestNote>
       </div>
     );
   }
@@ -78,22 +83,22 @@ export default function JournalPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="mono-label">journal</p>
-          <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight sm:text-5xl">Your weather.</h1>
+          <p className="mono-label">{j.label}</p>
+          <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight sm:text-5xl">{j.heading}</h1>
         </div>
         <button
           onClick={reflect}
           disabled={thinking}
           className="rounded-full bg-lilac px-5 py-2.5 text-sm font-semibold text-bg shadow-[0_0_40px_-8px_var(--lilac)] transition disabled:opacity-60"
         >
-          {thinking ? <span className="shimmer-text">Reading your patterns…</span> : "✦ Reflect on my patterns"}
+          {thinking ? <span className="shimmer-text">{j.reflecting}</span> : j.reflect}
         </button>
       </div>
 
       {error && <p className="rounded-xl border border-rose/30 bg-rose/10 px-4 py-3 text-sm text-rose">{error}</p>}
       {insight && (
         <div className="glass animate-[fadeIn_0.7s_ease] rounded-3xl border-lilac/20 p-7">
-          <p className="mono-label !text-lilac">insight</p>
+          <p className="mono-label !text-lilac">{j.insight}</p>
           <h2 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold">{insight.headline}</h2>
           <ul className="mt-4 space-y-2 text-muted">
             {insight.observations.map((o) => (
@@ -108,20 +113,26 @@ export default function JournalPage() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
         <div className="glass rounded-3xl p-6">
-          <p className="mono-label">Mood · last {Math.min(checkins.length, 30)} check-ins</p>
+          <p className="mono-label">{fmt(j.moodHeading, { n: Math.min(checkins.length, 30) })}</p>
           <div className="mt-4"><MoodChart checkins={checkins.slice(0, 30)} height={180} /></div>
         </div>
         <div className="glass space-y-5 rounded-3xl p-6">
           <div>
             <div className="font-[family-name:var(--font-display)] text-3xl font-semibold text-mint">{avg ? avg.toFixed(1) : "–"}</div>
-            <div className="mono-label !text-[10px]">average mood</div>
+            <div className="mono-label !text-[10px]">{j.averageMood}</div>
           </div>
           <div>
-            <div className="mono-label !text-[10px]">most felt</div>
+            <div className="mono-label !text-[10px]">{j.mostFelt}</div>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {topTags.length ? topTags.map(([t, n]) => (
-                <span key={t} className="rounded-full border border-white/10 px-2.5 py-1 text-xs text-muted">{t} <span className="text-faint">×{n}</span></span>
-              )) : <span className="text-sm text-muted">No tags yet</span>}
+              {topTags.length ? (
+                topTags.map(([tagId, n]) => (
+                  <span key={tagId} className="rounded-full border border-white/10 px-2.5 py-1 text-xs text-muted">
+                    {t.tools.checkin.tags[tagId as TagId] ?? tagId} <span className="text-faint">×{n}</span>
+                  </span>
+                ))
+              ) : (
+                <span className="text-sm text-muted">{j.noTags}</span>
+              )}
             </div>
           </div>
         </div>
@@ -129,7 +140,13 @@ export default function JournalPage() {
 
       <div className="space-y-6">
         {loaded && checkins.length === 0 && (
-          <p className="text-muted">No check-ins yet. Log one from <Link href="/app" className="text-ink underline decoration-white/20">Today</Link>.</p>
+          <p className="text-muted">
+            {emptyBefore}
+            <Link href="/app" className="text-ink underline decoration-white/20">
+              {j.emptyLink}
+            </Link>
+            {emptyAfter}
+          </p>
         )}
         {Object.entries(byDay).map(([day, items]) => (
           <section key={day}>
@@ -142,16 +159,21 @@ export default function JournalPage() {
                     <span className="mt-0.5 h-3 w-3 shrink-0 rounded-full" style={{ background: m.color, boxShadow: `0 0 14px ${m.color}` }} />
                     <div className="flex-1">
                       <div className="flex flex-wrap items-baseline gap-x-3 text-sm">
-                        <span className="font-semibold">{m.label}</span>
+                        <span className="font-semibold">{t.tools.checkin.moods[c.mood as 1 | 2 | 3 | 4 | 5]}</span>
                         <span className="font-mono text-[11px] text-faint">
-                          energy {c.energy}/5 · {new Date(c.created_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+                          {fmt(j.energyLine, {
+                            energy: c.energy,
+                            time: new Date(c.created_at).toLocaleTimeString(tag, { hour: "numeric", minute: "2-digit" }),
+                          })}
                         </span>
                       </div>
-                      {c.tags.length > 0 && <div className="mt-1 text-xs text-muted">{c.tags.join(" · ")}</div>}
+                      {c.tags.length > 0 && (
+                        <div className="mt-1 text-xs text-muted">{c.tags.map((tg) => t.tools.checkin.tags[tg as TagId] ?? tg).join(" · ")}</div>
+                      )}
                       {c.note && <p className="mt-2 text-sm text-ink/80">{c.note}</p>}
                     </div>
-                    <button onClick={() => remove(c.id)} className="font-mono text-[10px] text-faint opacity-0 transition hover:text-rose group-hover:opacity-100" aria-label="Delete check-in">
-                      delete
+                    <button onClick={() => remove(c.id)} className="font-mono text-[10px] text-faint opacity-0 transition hover:text-rose group-hover:opacity-100" aria-label={j.deleteCheckin}>
+                      {j.delete}
                     </button>
                   </div>
                 );

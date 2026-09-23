@@ -2,15 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CATEGORIES, CRISIS_TERMS, GOALS, type Category, type MedicationInput } from "@/lib/care-plan";
+import { CATEGORIES, CRISIS_TERMS, GOALS, type Category, type Goal, type MedicationInput } from "@/lib/care-plan";
 import { localTimezone, localToday } from "@/lib/care-client";
 import { CrisisCard } from "./crisis-card";
 import { handlePaywall } from "@/lib/billing-client";
+import { useI18n } from "@/components/i18n/locale-provider";
+import { fmt } from "@/lib/i18n";
 
 type Med = MedicationInput & { key: string; confirmed: boolean; fromScan: boolean };
-
-const STEPS = ["Consent", "Condition", "Rhythm", "Context", "Medicines", "Build"] as const;
-const BUILD_STAGES = ["Reading your answers…", "Scheduling your medicines exactly as prescribed…", "Choosing evidence-based habits…", "Weaving in breathing & sound…", "Writing your learn cards…", "Planting your garden…"];
 
 const newMed = (m: Partial<Med> = {}): Med => ({
   key: crypto.randomUUID(),
@@ -25,6 +24,8 @@ const newMed = (m: Partial<Med> = {}): Med => ({
 });
 
 export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) => void }) {
+  const { locale, t } = useI18n();
+  const w = t.plan.wizard;
   const [step, setStep] = useState(0);
   const [agreed, setAgreed] = useState(false);
   const [category, setCategory] = useState<Category | null>(null);
@@ -32,7 +33,7 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
   const [severity, setSeverity] = useState(3);
   const [wake, setWake] = useState("07:00");
   const [sleep, setSleep] = useState("23:00");
-  const [goals, setGoals] = useState<string[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [text, setText] = useState("");
   const [meds, setMeds] = useState<Med[]>([]);
   const [scanning, setScanning] = useState(false);
@@ -47,9 +48,9 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
 
   useEffect(() => {
     if (!building) return;
-    const id = window.setInterval(() => setStage((s) => Math.min(s + 1, BUILD_STAGES.length - 1)), 2200);
+    const id = window.setInterval(() => setStage((s) => Math.min(s + 1, w.buildStages.length - 1)), 2200);
     return () => window.clearInterval(id);
-  }, [building]);
+  }, [building, w.buildStages.length]);
 
   const canNext = [agreed, !!category, true, true, meds.every((m) => m.confirmed && m.name.trim() && (m.as_needed || m.times.length > 0)), false][step];
 
@@ -76,7 +77,7 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
       if (handlePaywall(res.status, json)) return;
       if (!res.ok) throw new Error(json.error);
       if (!json.readable || !json.medications.length) {
-        setScanNote("We couldn't find medicines in that image. Try a sharper photo, or add them by hand on the next step.");
+        setScanNote(w.scanNothing);
       } else {
         setMeds((cur) => [
           ...cur,
@@ -86,13 +87,15 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
         ]);
         if (!category && json.diagnosis_hint) {
           const hint = String(json.diagnosis_hint).toLowerCase();
-          const match = CATEGORIES.find((c) => hint.includes(c.id.replace("_", " ")) || hint.includes(c.label.toLowerCase().split(" ")[0]));
+          const match = CATEGORIES.find(
+            (c) => hint.includes(c.id.replace("_", " ")) || hint.includes(t.plan.categories[c.id].label.toLowerCase().split(" ")[0]),
+          );
           if (match) setCategory(match.id);
         }
-        setScanNote(`Found ${json.medications.length} medicine${json.medications.length > 1 ? "s" : ""}. You'll check each one next. The image is already gone.`);
+        setScanNote(json.medications.length === 1 ? w.scanFoundOne : fmt(w.scanFoundMany, { count: json.medications.length }));
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Scan failed.");
+      setError(e instanceof Error ? e.message : w.scanFailed);
     } finally {
       setScanning(false);
       if (cameraRef.current) cameraRef.current.value = "";
@@ -119,6 +122,7 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
           medications: meds.map(({ name, dose, instructions, times, as_needed }) => ({ name: name.trim(), dose: dose.trim(), instructions: instructions.trim(), times, as_needed })),
           timezone: localTimezone(),
           today: localToday(),
+          locale,
           consent: true,
         }),
       });
@@ -126,7 +130,7 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
       if (!res.ok) throw new Error(json.error);
       onCreated(json.care ?? null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : t.common.errors.generic);
       setStep(4);
     } finally {
       setBuilding(false);
@@ -149,7 +153,7 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
       )}
 
       <div className="mb-8 flex items-center gap-2">
-        {STEPS.map((s, i) => (
+        {w.steps.map((s, i) => (
           <div key={s} className="flex-1">
             <div className={`h-1 rounded-full transition-colors duration-500 ${i <= step ? "bg-mint" : "bg-white/10"}`} />
             <div className={`mono-label mt-2 hidden !text-[9px] sm:block ${i === step ? "!text-ink" : ""}`}>{s}</div>
@@ -167,43 +171,34 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
         >
           {step === 0 && (
             <section>
-              <p className="mono-label !text-mint">care plan · private beta</p>
-              <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-5xl">
-                Your prescription, turned into a plan you&apos;ll follow.
-              </h1>
-              <p className="mt-4 text-muted">
-                Answer a few questions and scan your prescription if you have one. Lull builds a 4-week plan around it with
-                your medicine schedule, small habits that are backed by evidence, breathing and sound sessions, and things
-                to ask your doctor. Each step you complete earns XP and grows your night garden.
-              </p>
+              <p className="mono-label !text-mint">{w.label}</p>
+              <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight sm:text-5xl">{w.heading}</h1>
+              <p className="mt-4 text-muted">{w.intro}</p>
               <div className="glass mt-8 space-y-4 rounded-3xl p-6 text-sm">
-                <Pledge icon="🔒" title="No personal details, ever">
-                  We never store your name, your doctor, dates, IDs or contact details. We remove them before anything is saved.
+                <Pledge icon="🔒" title={w.pledges.noPii.title}>
+                  {w.pledges.noPii.body}
                 </Pledge>
-                <Pledge icon="🧾" title="Prescription photos are never kept">
-                  We read the photo in memory, through an AI provider that doesn&apos;t keep or train on data, and then discard it.
+                <Pledge icon="🧾" title={w.pledges.noPhotos.title}>
+                  {w.pledges.noPhotos.body}
                 </Pledge>
-                <Pledge icon="🛡️" title="Encrypted health data">
-                  Medicines and plan details are encrypted with AES-256 before they reach our database. You can delete all of it in one tap.
+                <Pledge icon="🛡️" title={w.pledges.encrypted.title}>
+                  {w.pledges.encrypted.body}
                 </Pledge>
-                <Pledge icon="⚕️" title="A companion, not a doctor">
-                  Lull schedules your medicines exactly as prescribed and never changes them. Anything worth checking goes on a list for your doctor.
+                <Pledge icon="⚕️" title={w.pledges.notADoctor.title}>
+                  {w.pledges.notADoctor.body}
                 </Pledge>
               </div>
               <label className="mt-6 flex cursor-pointer items-start gap-3 text-sm text-muted">
                 <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--mint)]" />
-                <span>
-                  I understand Lull is not medical advice and doesn&apos;t replace my doctor. I agree to my health answers being processed as described
-                  above. In an emergency I&apos;ll contact local emergency services.
-                </span>
+                <span>{w.consent}</span>
               </label>
             </section>
           )}
 
           {step === 1 && (
             <section>
-              <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold sm:text-3xl">What are you working on?</h2>
-              <p className="mt-2 text-muted">Pick the closest one. It can be a diagnosis or just how things feel.</p>
+              <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold sm:text-3xl">{w.conditionHeading}</h2>
+              <p className="mt-2 text-muted">{w.conditionHelp}</p>
               <div className="mt-6 grid gap-2 sm:grid-cols-2">
                 {CATEGORIES.map((c) => (
                   <button
@@ -211,22 +206,22 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
                     onClick={() => setCategory(c.id)}
                     className={`rounded-2xl border p-4 text-left transition ${category === c.id ? "border-mint/50 bg-mint/[0.07] shadow-[0_0_30px_-12px_var(--mint)]" : "border-white/10 hover:border-white/25"}`}
                   >
-                    <div className="font-semibold">{c.label}</div>
-                    <div className="mt-1 text-xs text-muted">{c.hint}</div>
+                    <div className="font-semibold">{t.plan.categories[c.id].label}</div>
+                    <div className="mt-1 text-xs text-muted">{t.plan.categories[c.id].hint}</div>
                   </button>
                 ))}
               </div>
-              <p className="mono-label mt-8">How long has this been going on?</p>
+              <p className="mono-label mt-8">{w.durationHeading}</p>
               <div className="mt-3 grid grid-cols-3 gap-2">
-                {([["new", "Just started"], ["months", "A few months"], ["years", "Over a year"]] as const).map(([v, l]) => (
+                {(["new", "months", "years"] as const).map((v) => (
                   <button key={v} onClick={() => setDuration(v)} className={`rounded-xl border py-2.5 text-sm transition ${duration === v ? "border-mint/50 bg-mint/[0.07]" : "border-white/10"}`}>
-                    {l}
+                    {w.durations[v]}
                   </button>
                 ))}
               </div>
               <div className="mt-8 flex justify-between text-sm">
-                <span className="mono-label">How much is it affecting your days?</span>
-                <span className="font-mono text-xs text-muted">{["barely", "a little", "noticeably", "a lot", "constantly"][severity - 1]}</span>
+                <span className="mono-label">{w.severityHeading}</span>
+                <span className="font-mono text-xs text-muted">{w.severities[severity - 1]}</span>
               </div>
               <input
                 type="range"
@@ -236,20 +231,20 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
                 onChange={(e) => setSeverity(Number(e.target.value))}
                 className="slider mt-4 w-full"
                 style={{ ["--val" as string]: `${((severity - 1) / 4) * 100}%` }}
-                aria-label="Severity"
+                aria-label={w.severityLabel}
               />
             </section>
           )}
 
           {step === 2 && (
             <section>
-              <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold sm:text-3xl">Your daily rhythm</h2>
-              <p className="mt-2 text-muted">We time your plan and reminders around these.</p>
+              <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold sm:text-3xl">{w.rhythmHeading}</h2>
+              <p className="mt-2 text-muted">{w.rhythmHelp}</p>
               <div className="mt-6 grid grid-cols-2 gap-3">
-                <TimeField label="Usually wake up" value={wake} onChange={setWake} />
-                <TimeField label="Usually go to bed" value={sleep} onChange={setSleep} />
+                <TimeField label={w.wakeLabel} value={wake} onChange={setWake} />
+                <TimeField label={w.sleepLabel} value={sleep} onChange={setSleep} />
               </div>
-              <p className="mono-label mt-8">What would feel like a win? (up to 4)</p>
+              <p className="mono-label mt-8">{w.goalsHeading}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {GOALS.map((g) => {
                   const on = goals.includes(g);
@@ -259,7 +254,7 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
                       onClick={() => setGoals((cur) => (on ? cur.filter((x) => x !== g) : cur.length < 4 ? [...cur, g] : cur))}
                       className={`rounded-full border px-3.5 py-1.5 text-sm transition ${on ? "border-mint/50 bg-mint/10 text-mint" : "border-white/10 text-muted hover:text-ink"}`}
                     >
-                      {g}
+                      {t.plan.goals[g]}
                     </button>
                   );
                 })}
@@ -269,8 +264,8 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
 
           {step === 3 && (
             <section>
-              <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold sm:text-3xl">Add your prescription</h2>
-              <p className="mt-2 text-muted">Optional, but it makes the plan much better. Printed and handwritten prescriptions both work.</p>
+              <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold sm:text-3xl">{w.scanHeading}</h2>
+              <p className="mt-2 text-muted">{w.scanHelp}</p>
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 <button
                   disabled={scanning}
@@ -278,8 +273,8 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
                   className="glass group rounded-2xl p-5 text-left transition hover:border-mint/40 disabled:opacity-50"
                 >
                   <div className="text-2xl">📷</div>
-                  <div className="mt-2 font-semibold">Take a photo</div>
-                  <div className="text-xs text-muted">Flat surface, good light, whole page in frame</div>
+                  <div className="mt-2 font-semibold">{w.takePhoto}</div>
+                  <div className="text-xs text-muted">{w.takePhotoHint}</div>
                 </button>
                 <button
                   disabled={scanning}
@@ -287,45 +282,43 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
                   className="glass group rounded-2xl p-5 text-left transition hover:border-mint/40 disabled:opacity-50"
                 >
                   <div className="text-2xl">📄</div>
-                  <div className="mt-2 font-semibold">Upload image or PDF</div>
-                  <div className="text-xs text-muted">JPG, PNG, HEIC or PDF up to 8 MB</div>
+                  <div className="mt-2 font-semibold">{w.uploadFile}</div>
+                  <div className="text-xs text-muted">{w.uploadFileHint}</div>
                 </button>
               </div>
               <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => scan(e.target.files?.[0])} />
               <input ref={fileRef} type="file" accept="image/*,application/pdf" hidden onChange={(e) => scan(e.target.files?.[0])} />
-              {scanning && <p className="shimmer-text mt-4 font-mono text-xs uppercase tracking-[0.2em]">Reading your prescription privately…</p>}
+              {scanning && <p className="shimmer-text mt-4 font-mono text-xs uppercase tracking-[0.2em]">{w.scanning}</p>}
               {scanNote && <p className="mt-4 rounded-xl border border-mint/20 bg-mint/[0.06] px-4 py-3 text-sm text-mint">{scanNote}</p>}
 
-              <p className="mono-label mt-8">In your own words (optional)</p>
+              <p className="mono-label mt-8">{w.ownWords}</p>
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value.slice(0, 1200))}
                 rows={4}
-                placeholder="e.g. Diagnosed with GAD last month. I lie awake replaying conversations, and mornings feel heavy…"
+                placeholder={w.ownWordsPlaceholder}
                 className="glass mt-3 w-full resize-none rounded-2xl p-4 text-sm outline-none placeholder:text-faint focus:border-mint/40"
               />
-              <p className="mt-2 text-xs text-faint">Please leave out names and other personal details. We strip them anyway.</p>
+              <p className="mt-2 text-xs text-faint">{w.ownWordsNote}</p>
             </section>
           )}
 
           {step === 4 && (
             <section>
-              <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold sm:text-3xl">Check your medicines</h2>
-              <p className="mt-2 text-muted">
-                Your plan will schedule exactly what you confirm here, and nothing else. Tick each one after checking it against your prescription.
-              </p>
+              <h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold sm:text-3xl">{w.medsHeading}</h2>
+              <p className="mt-2 text-muted">{w.medsHelp}</p>
               <div className="mt-6 space-y-3">
-                {meds.length === 0 && <p className="rounded-2xl border border-dashed border-white/15 p-5 text-sm text-muted">No medicines added. That&apos;s fine, and your plan will focus on habits and sessions.</p>}
+                {meds.length === 0 && <p className="rounded-2xl border border-dashed border-white/15 p-5 text-sm text-muted">{w.medsEmpty}</p>}
                 {meds.map((m) => (
                   <div key={m.key} className={`glass rounded-2xl p-4 transition ${m.confirmed ? "border-mint/30" : ""}`}>
                     <div className="grid gap-2 sm:grid-cols-[1.4fr_1fr]">
-                      <input value={m.name} onChange={(e) => updateMed(m.key, { name: e.target.value.slice(0, 80) })} placeholder="Medicine name" className="field" aria-label="Medicine name" />
-                      <input value={m.dose} onChange={(e) => updateMed(m.key, { dose: e.target.value.slice(0, 60) })} placeholder="Dose (e.g. 50 mg)" className="field" aria-label="Dose" />
+                      <input value={m.name} onChange={(e) => updateMed(m.key, { name: e.target.value.slice(0, 80) })} placeholder={w.medName} className="field" aria-label={w.medName} />
+                      <input value={m.dose} onChange={(e) => updateMed(m.key, { dose: e.target.value.slice(0, 60) })} placeholder={w.medDose} className="field" aria-label={w.medDoseLabel} />
                     </div>
-                    <input value={m.instructions} onChange={(e) => updateMed(m.key, { instructions: e.target.value.slice(0, 200) })} placeholder="Instructions (e.g. after breakfast)" className="field mt-2 w-full" aria-label="Instructions" />
+                    <input value={m.instructions} onChange={(e) => updateMed(m.key, { instructions: e.target.value.slice(0, 200) })} placeholder={w.medInstructions} className="field mt-2 w-full" aria-label={w.medInstructionsLabel} />
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       {m.as_needed ? (
-                        <span className="text-xs text-muted">Only when needed. It won&apos;t be scheduled.</span>
+                        <span className="text-xs text-muted">{w.asNeededNote}</span>
                       ) : (
                         <>
                           {m.times.map((t, i) => (
@@ -335,42 +328,42 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
                                 value={t}
                                 onChange={(e) => updateMed(m.key, { times: m.times.map((x, j) => (j === i ? e.target.value : x)) })}
                                 className="field !py-1.5 font-mono text-xs"
-                                aria-label="Dose time"
+                                aria-label={w.doseTime}
                               />
-                              <button onClick={() => updateMed(m.key, { times: m.times.filter((_, j) => j !== i) })} className="px-1 text-faint hover:text-rose" aria-label="Remove time">
+                              <button onClick={() => updateMed(m.key, { times: m.times.filter((_, j) => j !== i) })} className="px-1 text-faint hover:text-rose" aria-label={w.removeTime}>
                                 ×
                               </button>
                             </span>
                           ))}
                           {m.times.length < 6 && (
                             <button onClick={() => updateMed(m.key, { times: [...m.times, "08:00"] })} className="rounded-lg border border-white/10 px-2.5 py-1.5 font-mono text-xs text-muted hover:text-ink">
-                              + time
+                              {w.addTime}
                             </button>
                           )}
                         </>
                       )}
                       <label className="ml-auto flex items-center gap-1.5 text-xs text-muted">
                         <input type="checkbox" checked={m.as_needed} onChange={(e) => updateMed(m.key, { as_needed: e.target.checked })} className="accent-[var(--mint)]" />
-                        as needed
+                        {w.asNeeded}
                       </label>
                     </div>
-                    {needsTime(m) && <p className="mt-2 text-xs text-rose">Add when you take it, or mark it &quot;as needed&quot;.</p>}
+                    {needsTime(m) && <p className="mt-2 text-xs text-rose">{w.needsTime}</p>}
                     <div className="mt-3 flex items-center justify-between border-t border-white/[0.06] pt-3">
                       <label className="flex cursor-pointer items-center gap-2 text-sm">
                         <input type="checkbox" checked={m.confirmed} onChange={(e) => updateMed(m.key, { confirmed: e.target.checked })} className="h-4 w-4 accent-[var(--mint)]" />
-                        <span className={m.confirmed ? "text-mint" : "text-ink"}>{m.confirmed ? "Confirmed" : "This matches my prescription"}</span>
+                        <span className={m.confirmed ? "text-mint" : "text-ink"}>{m.confirmed ? w.confirmed : w.confirmPrompt}</span>
                       </label>
                       <div className="flex items-center gap-3">
-                        {m.fromScan && <span className="mono-label !text-[9px]">from scan</span>}
+                        {m.fromScan && <span className="mono-label !text-[9px]">{w.fromScan}</span>}
                         <button onClick={() => setMeds((cur) => cur.filter((x) => x.key !== m.key))} className="font-mono text-xs text-faint hover:text-rose">
-                          remove
+                          {w.remove}
                         </button>
                       </div>
                     </div>
                   </div>
                 ))}
                 <button onClick={() => setMeds((cur) => [...cur, newMed({ times: ["08:00"] })])} className="w-full rounded-2xl border border-dashed border-white/15 py-3 text-sm text-muted transition hover:border-white/30 hover:text-ink">
-                  + Add a medicine
+                  {w.addMedicine}
                 </button>
               </div>
             </section>
@@ -382,8 +375,8 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
                 <div className="absolute inset-0 animate-ping rounded-full bg-mint/10 [animation-duration:2.4s]" />
                 <div className="absolute inset-6 animate-pulse rounded-full bg-[radial-gradient(circle_at_35%_30%,#fff8,var(--mint)_35%,var(--sky)_75%)] shadow-[0_0_80px_-10px_var(--mint)]" />
               </div>
-              <p className="shimmer-text mt-10 font-[family-name:var(--font-display)] text-xl font-semibold">{BUILD_STAGES[stage]}</p>
-              <p className="mono-label mt-3">private · encrypted · about 20 seconds</p>
+              <p className="shimmer-text mt-10 font-[family-name:var(--font-display)] text-xl font-semibold">{w.buildStages[stage]}</p>
+              <p className="mono-label mt-3">{w.buildingNote}</p>
             </section>
           )}
         </motion.div>
@@ -394,18 +387,18 @@ export function IntakeWizard({ onCreated }: { onCreated: (care: string | null) =
       {step < 5 && (
         <div className="mt-10 flex items-center justify-between">
           <button onClick={() => setStep((s) => Math.max(0, s - 1))} className={`text-sm text-muted hover:text-ink ${step === 0 ? "invisible" : ""}`}>
-            ← Back
+            ← {t.common.back}
           </button>
           <button
             onClick={next}
             disabled={!canNext || scanning}
             className="rounded-full bg-ink px-7 py-3 text-sm font-semibold text-bg shadow-[0_0_40px_-8px_rgba(142,245,212,0.8)] transition disabled:opacity-40"
           >
-            {step === 4 ? "✦ Build my plan" : step === 3 && !meds.length && !text ? "Skip for now →" : "Continue →"}
+            {step === 4 ? w.buildCta : step === 3 && !meds.length && !text ? w.skip : w.continue}
           </button>
         </div>
       )}
-      {step === 4 && !canNext && meds.length > 0 && <p className="mt-3 text-right text-xs text-faint">Confirm each medicine and set its time to continue.</p>}
+      {step === 4 && !canNext && meds.length > 0 && <p className="mt-3 text-right text-xs text-faint">{w.confirmAll}</p>}
     </div>
   );
 }
