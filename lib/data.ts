@@ -1,6 +1,7 @@
 "use client";
 
 import { getInsforge } from "@/lib/insforge/client";
+import { fmt, type Messages } from "@/lib/i18n";
 
 export type PracticeKind = "breathe" | "soundscape" | "composed" | "sleep";
 
@@ -85,17 +86,21 @@ export type MoodValue = (typeof MOODS)[number]["v"];
 export const TAGS = ["anxious", "stressed", "tired", "restless", "sad", "calm", "focused", "grateful", "hopeful", "lonely"] as const;
 export type TagId = (typeof TAGS)[number];
 
-export function formatDuration(sec: number) {
+/** Durations and relative times need the reader's language, so they take the dictionary. */
+export function formatDuration(sec: number, t: Messages) {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
-  return m ? `${m}m${s ? ` ${s}s` : ""}` : `${s}s`;
+  const time = t.tools.time;
+  if (!m) return fmt(time.secondsShort, { n: s });
+  return s ? fmt(time.minutesSeconds, { m, s }) : fmt(time.minutesShort, { n: m });
 }
 
-export function timeAgo(iso: string) {
+export function timeAgo(iso: string, t: Messages, tag = "en-IN") {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  if (diff < 86400 * 7) return `${Math.floor(diff / 86400)}d ago`;
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const time = t.tools.time;
+  if (diff < 60) return time.justNow;
+  if (diff < 3600) return fmt(time.minutesAgo, { n: Math.floor(diff / 60) });
+  if (diff < 86400) return fmt(time.hoursAgo, { n: Math.floor(diff / 3600) });
+  if (diff < 86400 * 7) return fmt(time.daysAgo, { n: Math.floor(diff / 86400) });
+  return new Date(iso).toLocaleDateString(tag, { month: "short", day: "numeric" });
 }

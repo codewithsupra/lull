@@ -47,6 +47,15 @@ const crisis = {
   },
   localEmergency: "your local emergency number",
 
+  offline: {
+    title: "Crisis help — Lull",
+    heading: "You're offline, and help still works.",
+    lead: "These numbers are saved on your device. Calling does not need internet.",
+    anywhere: "Anywhere",
+    emergency: "Emergency:",
+    note: "If you are in immediate danger, call your local emergency number. Lull is a wellbeing companion, not a medical service.",
+  },
+
   plan: {
     heading: "Your safety plan",
     coping: "Things that have helped before",

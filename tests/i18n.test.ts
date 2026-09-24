@@ -23,7 +23,7 @@ const visible = (value: string) => value.replace(/\{\w+\}/g, " ");
  * instrument names, keywords a user must literally text, and units.
  */
 const ALLOWED_LATIN =
-  /\b(lull|pro|xp|cbt|act|phq|gad|isi|ai|home|shout|hello|findahelpline|com|tele|manas|kiran|icall|tiss|aasra|samaritans|shout|trevor|lgbtq|nhs|sos|estijaba|telefonseelsorge|zelfmoordpreventie|sadag|lifeline|beyond|blue|crisis|text|line|project|health|helpline|mental|suicide|need|talk|govt|india|dept|option|min|mg|en|fr|upi|gst|whatsapp|google|github|stripe|razorpay)\b/gi;
+  /\b(lull|pro|xp|cbt|act|phq|gad|isi|ai|home|shout|hello|findahelpline|com|tele|manas|kiran|icall|tiss|aasra|samaritans|shout|trevor|lgbtq|nhs|sos|estijaba|telefonseelsorge|zelfmoordpreventie|sadag|lifeline|beyond|blue|crisis|text|line|project|health|helpline|mental|suicide|need|talk|govt|india|dept|option|min|mg|en|fr|upi|gst|whatsapp|google|github|stripe|razorpay|next|js|insforge|webgl|web|audio|nextjs)\b/gi;
 
 describe("locale registry", () => {
   it("has a dictionary and metadata for every declared locale", () => {

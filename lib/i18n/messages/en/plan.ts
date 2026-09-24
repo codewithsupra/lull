@@ -173,6 +173,13 @@ const plan = {
     footer: "lull is a wellbeing companion, not medical advice · in an emergency call your local emergency number",
   },
 
+  notifications: {
+    morning: { title: "Good morning 🌱", body: "Your morning plan is ready. A few small steps." },
+    afternoon: { title: "A midday check-in", body: "Something small from your plan is waiting." },
+    evening: { title: "Evening plan 🌙", body: "Time for your evening steps." },
+    night: { title: "Winding down", body: "Your night routine is ready when you are." },
+  },
+
   crisisCard: {
     label: "before we go on",
     heading: "That sounds really heavy.",

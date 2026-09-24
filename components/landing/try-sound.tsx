@@ -2,14 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getEngine, type LayerId } from "@/lib/audio/engine";
+import { useI18n } from "@/components/i18n/locale-provider";
 
-const PRESETS: { id: string; label: string; mix: Partial<Record<LayerId, number>> }[] = [
-  { id: "storm", label: "Night rain", mix: { rain: 0.8, brown: 0.35, drone: 0.4 } },
-  { id: "tide", label: "Low tide", mix: { ocean: 0.85, wind: 0.25, bowls: 0.4 } },
-  { id: "cabin", label: "Cabin fire", mix: { fire: 0.8, wind: 0.45, drone: 0.25 } },
+const PRESETS: { id: "storm" | "tide" | "cabin"; mix: Partial<Record<LayerId, number>> }[] = [
+  { id: "storm", mix: { rain: 0.8, brown: 0.35, drone: 0.4 } },
+  { id: "tide", mix: { ocean: 0.85, wind: 0.25, bowls: 0.4 } },
+  { id: "cabin", mix: { fire: 0.8, wind: 0.45, drone: 0.25 } },
 ];
 
 export function TrySound() {
+  const { t } = useI18n();
   const [active, setActive] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -70,12 +72,12 @@ export function TrySound() {
             }`}
           >
             {active === p.id ? "■ " : "▶ "}
-            {p.label}
+            {t.landing.sound.presets[p.id]}
           </button>
         ))}
       </div>
       <canvas ref={canvasRef} width={480} height={90} className="mt-5 h-[90px] w-full opacity-90" />
-      <p className="mono-label mt-2">{active ? "synthesizing live · web audio" : "tap a preset · headphones recommended"}</p>
+      <p className="mono-label mt-2">{active ? t.landing.sound.live : t.landing.sound.tapPreset}</p>
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { openrouter, CHAT_MODEL, parseJsonReply } from "@/lib/ai/openrouter";
 import { PlanSchema } from "@/lib/plan";
 import { requireFeature } from "@/lib/billing-server";
 import { FEATURES } from "@/lib/billing";
-import { getLocale } from "@/lib/i18n/server";
+import { getLocale, apiErrors } from "@/lib/i18n/server";
 import { LOCALES } from "@/lib/i18n";
 
 const Body = z.object({
@@ -41,14 +41,15 @@ Guidance:
 - If they mention self-harm, suicide or being in danger, set "care" to a brief, kind message urging them to reach out now to local emergency services or a crisis line (in the US, call or text 988). Keep the session gentle and grounding. Otherwise "care" is null.`;
 
 export async function POST(request: NextRequest) {
+  const e = await apiErrors();
   const insforge = await createInsForgeServerClient();
   const { data: auth } = await insforge.auth.getCurrentUser();
-  if (!auth?.user) return NextResponse.json({ error: "Sign in to compose sessions." }, { status: 401 });
+  if (!auth?.user) return NextResponse.json({ error: e.compose.signIn }, { status: 401 });
 
   const parsed = Body.safeParse(await request.json().catch(() => ({})));
   // The body may carry the locale (the composer sends it); otherwise fall back to the cookie.
   const locale = parsed.success && parsed.data.locale ? parsed.data.locale : await getLocale();
-  if (!parsed.success) return NextResponse.json({ error: "Tell Lull a little more about how you feel." }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: e.compose.tooShort }, { status: 400 });
   const { prompt, minutes } = parsed.data;
 
   const gate = await requireFeature(insforge, "compose");
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
     .gte("created_at", since);
   if ((count ?? 0) >= gate.limit) {
     return gate.plan.pro
-      ? NextResponse.json({ error: "You've composed a lot today. Replay one from your history, or come back tomorrow." }, { status: 429 })
+      ? NextResponse.json({ error: e.compose.tooMany }, { status: 429 })
       : NextResponse.json({ error: `Free includes ${gate.limit} composed sessions a day. Go Pro for ${FEATURES.compose.pro}.`, upgrade: true, feature: "compose" }, { status: 402 });
   }
 
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
     plan = PlanSchema.parse(parseJsonReply(completion.choices[0]?.message?.content ?? ""));
   } catch (err) {
     console.error("compose failed", err);
-    return NextResponse.json({ error: "The composer lost its train of thought. Try again in a moment." }, { status: 502 });
+    return NextResponse.json({ error: e.compose.failed }, { status: 502 });
   }
 
   const { data, error } = await insforge.database

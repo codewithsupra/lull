@@ -21,3 +21,8 @@ export async function getMessages(): Promise<{ locale: Locale; t: Messages }> {
 
 /** Locale for a background job (push, digests) where there is no request. */
 export const localeOf = (stored: string | null | undefined): Locale => asLocale(stored);
+
+/** User-facing API error strings for this request's language. */
+export async function apiErrors(): Promise<Messages["errors"]> {
+  return messagesFor(await getLocale()).errors;
+}

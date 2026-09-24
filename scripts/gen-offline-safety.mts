@@ -1,23 +1,40 @@
 /**
- * Generates public/offline-safety.html: a fully self-contained crisis page (inline CSS, no JS,
- * no external assets) that the service worker serves when the user is offline.
+ * Generates the offline crisis pages: fully self-contained (inline CSS, no JS, no external
+ * assets) so the service worker can serve them with no network at all.
+ *
+ * One page per language (FR8). Someone in crisis should not have to read a second language,
+ * and this page is exactly where that matters most — it is the last thing still working.
  */
 import { writeFileSync } from "node:fs";
 import { REGIONS, GLOBAL_LINE, lineHref } from "../lib/crisis.ts";
+import { LOCALES, LOCALE_META } from "../lib/i18n/config.ts";
+import { messagesFor } from "../lib/i18n/index.ts";
+import { offlinePagePath } from "../lib/offline.ts";
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-const regions = REGIONS.map(
-  (r) => `<section><h2>${esc(r.label)}</h2><p class="em">Emergency: <a href="tel:${r.emergency.replace(/\D/g, "")}">${esc(r.emergency)}</a></p><ul>${r.lines
-    .map((l) => `<li><a href="${lineHref(l)}"><strong>${esc(l.number ?? "")}</strong> ${esc(l.name)}</a>${l.note ? `<span>${esc(l.note)}</span>` : ""}</li>`)
-    .join("")}</ul></section>`,
-).join("");
+for (const locale of LOCALES) {
+  const t = messagesFor(locale).crisis;
+  const regions = REGIONS.map(
+    (r) =>
+      `<section><h2>${esc(t.countries[r.country])}</h2><p class="em">${esc(t.offline.emergency)} <a href="tel:${r.emergency.replace(/\D/g, "")}">${esc(
+        r.emergency,
+      )}</a></p><ul>${r.lines
+        .map(
+          (l) =>
+            `<li><a href="${lineHref(l)}"><strong>${esc(l.number ?? "")}</strong> ${esc(l.name)}</a>${
+              l.note ? `<span>${esc(t.notes[l.note])}</span>` : ""
+            }</li>`,
+        )
+        .join("")}</ul></section>`,
+  ).join("");
 
-writeFileSync(
-  "public/offline-safety.html",
-  `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Crisis help — Lull</title>
+  const path = `public/${offlinePagePath(locale)}`;
+  writeFileSync(
+    path,
+    `<!doctype html>
+<html lang="${LOCALE_META[locale].tag}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(t.offline.title)}</title>
 <style>
   :root{color-scheme:dark}
   body{margin:0;padding:28px 20px 60px;background:#03050b;color:#e8edf7;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
@@ -34,12 +51,13 @@ writeFileSync(
   .note{margin-top:32px;color:#566077;font-size:13px}
 </style></head>
 <body><div class="wrap">
-  <h1>You're offline, and help still works.</h1>
-  <p class="lead">These numbers are saved on your device. Calling does not need internet.</p>
-  <section><h2>Anywhere</h2><ul><li><a href="${GLOBAL_LINE.url}"><strong>findahelpline.com</strong> ${esc(GLOBAL_LINE.name)}</a></li></ul></section>
+  <h1>${esc(t.offline.heading)}</h1>
+  <p class="lead">${esc(t.offline.lead)}</p>
+  <section><h2>${esc(t.offline.anywhere)}</h2><ul><li><a href="${GLOBAL_LINE.url}"><strong>findahelpline.com</strong> ${esc(t.findHelpline)}</a></li></ul></section>
   ${regions}
-  <p class="note">If you are in immediate danger, call your local emergency number. Lull is a wellbeing companion, not a medical service.</p>
+  <p class="note">${esc(t.offline.note)}</p>
 </div></body></html>
 `,
-);
-console.log("wrote public/offline-safety.html");
+  );
+  console.log(`wrote ${path}`);
+}

@@ -6,6 +6,8 @@ const today = {
     afternoon: "Good afternoon",
     evening: "Good evening",
     windingDown: "Winding down",
+    withName: "{greeting}, {name}.",
+    plain: "{greeting}.",
   },
   guestNote: "You're exploring as a guest. Breathe and Sounds work fully. Sign up to save your streak, check-ins and composed sessions.",
 

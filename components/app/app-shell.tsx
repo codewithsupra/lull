@@ -29,7 +29,7 @@ const NAV = [
 export function AppShell({ user, children }: { user: SessionUser | null; children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -45,9 +45,15 @@ export function AppShell({ user, children }: { user: SessionUser | null; childre
   const [pro, setPro] = useState<boolean | null>(null);
   useEffect(() => {
     // Registered for everyone so the offline crisis page is always available.
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw.js", { scope: "/" })
+        // So the offline crisis page is served in the language the app is being used in.
+        .then((reg) => (reg.active ?? navigator.serviceWorker.controller)?.postMessage({ type: "locale", locale }))
+        .catch(() => {});
+    }
     if (!user) clearSafetyCache();
-  }, [user]);
+  }, [user, locale]);
   useEffect(() => {
     if (!user) return;
     fetchBilling()
@@ -89,7 +95,7 @@ export function AppShell({ user, children }: { user: SessionUser | null; childre
           >
             {t.common.helpNow}
           </button>
-          <LanguageSwitcher className="hidden sm:block" />
+          <LanguageSwitcher />
           {user ? (
             <form action={signOut} className="flex items-center gap-3">
               {pro === false && (

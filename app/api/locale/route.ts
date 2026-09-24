@@ -3,6 +3,7 @@ import { z } from "zod";
 import { LOCALES, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE } from "@/lib/i18n";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
 import { logError } from "@/lib/log";
+import { apiErrors } from "@/lib/i18n/server";
 
 const Body = z.object({ locale: z.enum(LOCALES) });
 
@@ -15,8 +16,9 @@ const Body = z.object({ locale: z.enum(LOCALES) });
  * Deliberately open to signed-out visitors: picking a language should not require an account.
  */
 export async function POST(request: NextRequest) {
+  const e = await apiErrors();
   const parsed = Body.safeParse(await request.json().catch(() => ({})));
-  if (!parsed.success) return NextResponse.json({ error: "Unsupported language." }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: e.locale.unsupported }, { status: 400 });
   const { locale } = parsed.data;
 
   const response = NextResponse.json({ ok: true, locale });

@@ -4,18 +4,24 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { SITE } from "@/lib/site";
+import { useI18n } from "@/components/i18n/locale-provider";
+import { LanguageSwitcher } from "@/components/i18n/language-switcher";
+import type { Messages } from "@/lib/i18n";
 
-const LINKS = [
-  { key: "B", label: "Breathe", href: "/app/breathe" },
-  { key: "S", label: "Sounds", href: "/app/sounds" },
-  { key: "C", label: "Compose", href: "/app/compose" },
-  { key: "G", label: "GitHub", href: SITE.github, external: true },
-  { key: "L", label: "Log in", href: "/login" },
+type NavKey = keyof Messages["landing"]["nav"];
+
+const LINKS: { key: string; label: NavKey; href: string; external?: boolean }[] = [
+  { key: "B", label: "breathe", href: "/app/breathe" },
+  { key: "S", label: "sounds", href: "/app/sounds" },
+  { key: "C", label: "compose", href: "/app/compose" },
+  { key: "G", label: "github", href: SITE.github, external: true },
+  { key: "L", label: "logIn", href: "/login" },
 ];
 
 export function TopNav({ signedIn }: { signedIn: boolean }) {
   const router = useRouter();
-  const links = LINKS.map((l) => (l.key === "L" && signedIn ? { ...l, label: "Open app", href: "/app" } : l));
+  const { t } = useI18n();
+  const links = LINKS.map((l) => (l.key === "L" && signedIn ? { ...l, label: "openApp" as NavKey, href: "/app" } : l));
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -36,20 +42,21 @@ export function TopNav({ signedIn }: { signedIn: boolean }) {
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
         <Link href="/" className="flex items-center gap-3">
           <span className="wordmark text-2xl">lull</span>
-          <span className="mono-label hidden md:inline">scroll or press a key ↘</span>
+          <span className="mono-label hidden md:inline">{t.landing.scrollHint}</span>
         </Link>
         <nav className="flex items-center gap-1.5 sm:gap-2">
           {links.map((l) =>
             l.external ? (
               <a key={l.key} href={l.href} target="_blank" rel="noreferrer" className="kbd hidden sm:inline-block">
-                [{l.key}] {l.label}
+                [{l.key}] {t.landing.nav[l.label]}
               </a>
             ) : (
               <Link key={l.key} href={l.href} className={`kbd ${l.key === "L" ? "" : "hidden sm:inline-block"}`}>
-                [{l.key}] {l.label}
+                [{l.key}] {t.landing.nav[l.label]}
               </Link>
             ),
           )}
+          <LanguageSwitcher />
         </nav>
       </div>
     </header>

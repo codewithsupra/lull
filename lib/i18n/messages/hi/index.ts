@@ -9,7 +9,9 @@ import screeners from "./screeners";
 import plan from "./plan";
 import tools from "./tools";
 import app from "./app";
+import landing from "./landing";
+import errors from "./errors";
 
-const hi = { common, nav, meta, today, companion, crisis, safety, screeners, plan, tools, app };
+const hi = { common, nav, meta, today, companion, crisis, safety, screeners, plan, tools, app, landing, errors };
 
 export default hi;

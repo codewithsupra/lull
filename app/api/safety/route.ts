@@ -4,9 +4,11 @@ import { decryptJson, encryptJson } from "@/lib/crypto";
 import { SafetyPlan } from "@/lib/safety";
 import { headers } from "next/headers";
 import { logError, logEvent } from "@/lib/log";
+import { apiErrors } from "@/lib/i18n/server";
 
 /** The safety plan is free for everyone, forever: it is never behind the paywall. */
 export async function GET() {
+  const e = await apiErrors();
   const auth = await requireUser();
   if ("error" in auth) return auth.error;
   const country = (await headers()).get("x-vercel-ip-country") ?? null;
@@ -20,30 +22,32 @@ export async function GET() {
     });
   } catch (err) {
     logError("safety.load.failed", err, { user: auth.userId });
-    return NextResponse.json({ error: "Couldn't load your safety plan." }, { status: 500 });
+    return NextResponse.json({ error: e.safety.loadFailed }, { status: 500 });
   }
 }
 
 export async function PUT(request: NextRequest) {
+  const e = await apiErrors();
   const auth = await requireUser();
   if ("error" in auth) return auth.error;
   const parsed = SafetyPlan.safeParse(await request.json().catch(() => ({})));
-  if (!parsed.success) return NextResponse.json({ error: "Some entries are too long or empty." }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: e.safety.invalid }, { status: 400 });
 
   const row = { plan_enc: encryptJson(parsed.data), updated_at: new Date().toISOString() };
   const { error } = await auth.insforge.database.from("safety_plans").upsert([row], { onConflict: "user_id" });
   if (error) {
     logError("safety.save.failed", error, { user: auth.userId });
-    return NextResponse.json({ error: "Couldn't save your safety plan." }, { status: 500 });
+    return NextResponse.json({ error: e.safety.saveFailed }, { status: 500 });
   }
   logEvent("safety.saved", { user: auth.userId });
   return NextResponse.json({ plan: parsed.data, updated_at: row.updated_at });
 }
 
 export async function DELETE() {
+  const e = await apiErrors();
   const auth = await requireUser();
   if ("error" in auth) return auth.error;
   const { error } = await auth.insforge.database.from("safety_plans").delete().not("user_id", "is", null);
-  if (error) return NextResponse.json({ error: "Couldn't delete." }, { status: 500 });
+  if (error) return NextResponse.json({ error: e.safety.deleteFailed }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

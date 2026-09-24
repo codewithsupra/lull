@@ -17,7 +17,7 @@ type History = { id: string; title: string; prompt: string; plan: Plan; created_
 
 export function ComposeClient({ initialPrompt, taskId }: { initialPrompt: string; taskId?: string }) {
   const user = useUser();
-  const { locale, t } = useI18n();
+  const { locale, t, tag } = useI18n();
   const c = t.app.compose;
   const task = useTaskCompletion(taskId);
   const [prompt, setPrompt] = useState(initialPrompt);
@@ -167,7 +167,7 @@ export function ComposeClient({ initialPrompt, taskId }: { initialPrompt: string
                   >
                     <div className="flex items-baseline justify-between gap-2">
                       <span className="font-semibold">{h.title}</span>
-                      <span className="shrink-0 font-mono text-[10px] text-faint">{timeAgo(h.created_at)}</span>
+                      <span className="shrink-0 font-mono text-[10px] text-faint">{timeAgo(h.created_at, t, tag)}</span>
                     </div>
                     <p className="mt-1 line-clamp-2 text-xs text-muted">{h.prompt}</p>
                   </button>

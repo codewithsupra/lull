@@ -59,4 +59,4 @@ next-env.d.ts
 
 /.scratch
 
-public/offline-safety.html
+public/offline-safety*.html

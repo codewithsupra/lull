@@ -4,7 +4,7 @@ import { createInsForgeServerClient } from "@/lib/insforge/server";
 import { openrouter, CHAT_MODEL, parseJsonReply } from "@/lib/ai/openrouter";
 import { requireFeature } from "@/lib/billing-server";
 import { withinLimit } from "@/lib/care-plan-server";
-import { getLocale } from "@/lib/i18n/server";
+import { getLocale, apiErrors } from "@/lib/i18n/server";
 
 const Insight = z.object({
   headline: z.string().max(140),
@@ -16,13 +16,14 @@ const Insight = z.object({
 });
 
 export async function POST() {
+  const e = await apiErrors();
   const locale = await getLocale();
   const insforge = await createInsForgeServerClient();
   const { data: auth } = await insforge.auth.getCurrentUser();
-  if (!auth?.user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!auth?.user) return NextResponse.json({ error: e.signIn }, { status: 401 });
   const gate = await requireFeature(insforge, "insight");
   if ("error" in gate) return gate.error;
-  if (!(await withinLimit(insforge, "insight", gate.limit))) return NextResponse.json({ error: "That's plenty of insight for today. Come back tomorrow." }, { status: 429 });
+  if (!(await withinLimit(insforge, "insight", gate.limit))) return NextResponse.json({ error: e.insight.tooMany }, { status: 429 });
 
   const [checkins, practice] = await Promise.all([
     insforge.database.from("mood_checkins").select("mood, energy, tags, note, created_at").order("created_at", { ascending: false }).limit(30),
@@ -30,7 +31,7 @@ export async function POST() {
   ]);
   const rows = checkins.data ?? [];
   if (rows.length < 3) {
-    return NextResponse.json({ error: "Log at least 3 check-ins to unlock insights." }, { status: 400 });
+    return NextResponse.json({ error: e.insight.needMore }, { status: 400 });
   }
 
   try {
@@ -54,6 +55,6 @@ export async function POST() {
     return NextResponse.json(Insight.parse(parseJsonReply(completion.choices[0]?.message?.content ?? "")));
   } catch (err) {
     console.error("insight failed", err);
-    return NextResponse.json({ error: "Couldn't read your patterns right now. Try again shortly." }, { status: 502 });
+    return NextResponse.json({ error: e.insight.failed }, { status: 502 });
   }
 }

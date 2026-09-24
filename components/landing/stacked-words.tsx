@@ -3,14 +3,18 @@
 import { motion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 
-const WORDS = [
-  { text: "breathe", style: "outline-text", dir: -1 },
-  { text: "soundscape", style: "solid-lime", dir: 1 },
-  { text: "compose", style: "outline-text", dir: -1 },
-  { text: "sleep", style: "solid-lime", dir: 1 },
+import { useI18n } from "@/components/i18n/locale-provider";
+
+const STYLES = [
+  { style: "outline-text", dir: -1 },
+  { style: "solid-lime", dir: 1 },
+  { style: "outline-text", dir: -1 },
+  { style: "solid-lime", dir: 1 },
 ];
 
 export function StackedWords() {
+  const { t } = useI18n();
+  const words = STYLES.map((s, i) => ({ ...s, text: t.landing.words[i] }));
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
   const shifts = [
@@ -22,8 +26,8 @@ export function StackedWords() {
   const skew = useTransform(scrollYProgress, [0, 0.5, 1], [-8, 0, 8]);
 
   return (
-    <div ref={ref} className="relative overflow-hidden py-24 sm:py-40" aria-label="Breathe, soundscape, compose, sleep">
-      {WORDS.map((w, i) => (
+    <div ref={ref} className="relative overflow-hidden py-24 sm:py-40" aria-label={t.landing.words.join(", ")}>
+      {words.map((w, i) => (
         <motion.div
           key={w.text}
           style={{ x: shifts[i], skewX: skew }}

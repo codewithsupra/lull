@@ -3,16 +3,20 @@ import { timingSafeEqual } from "node:crypto";
 import webpush from "web-push";
 import { createAdminClient } from "@insforge/sdk";
 import { logError, logEvent } from "@/lib/log";
+import { DEFAULT_LOCALE, asLocale, messagesFor, type Locale } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
-// Generic by design: lock screens are public, so never name medications or conditions.
-const COPY: Record<string, { title: string; body: string }> = {
-  morning: { title: "Good morning 🌱", body: "Your morning plan is ready. A few small steps." },
-  afternoon: { title: "A midday check-in", body: "Something small from your plan is waiting." },
-  evening: { title: "Evening plan 🌙", body: "Time for your evening steps." },
-  night: { title: "Winding down", body: "Your night routine is ready when you are." },
-};
+type Slot = keyof ReturnType<typeof messagesFor>["plan"]["notifications"];
+
+/**
+ * Reminder copy, in the language the user chose (FR8).
+ * Generic by design: lock screens are public, so this never names medications or conditions.
+ */
+function copyFor(slot: string, locale: Locale) {
+  const all = messagesFor(locale).plan.notifications;
+  return all[(slot as Slot) in all ? (slot as Slot) : "evening"];
+}
 
 function authorized(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -36,11 +40,23 @@ export async function GET(request: NextRequest) {
   }
 
   const targets = (data ?? []) as Target[];
+
+  // One lookup for everyone in this batch: the cookie is not available to a cron run, so the
+  // language comes from the care profile.
+  const locales = new Map<string, Locale>();
+  if (targets.length) {
+    const { data: profiles } = await admin.database
+      .from("care_profiles")
+      .select("user_id, locale")
+      .in("user_id", [...new Set(targets.map((t) => t.user_id))]);
+    for (const row of (profiles ?? []) as { user_id: string; locale: string }[]) locales.set(row.user_id, asLocale(row.locale));
+  }
+
   let sent = 0;
   let pruned = 0;
   await Promise.all(
     targets.map(async (t) => {
-      const copy = COPY[t.slot] ?? COPY.evening;
+      const copy = copyFor(t.slot, locales.get(t.user_id) ?? DEFAULT_LOCALE);
       try {
         await webpush.sendNotification(
           { endpoint: t.endpoint, keys: { p256dh: t.p256dh, auth: t.auth } },

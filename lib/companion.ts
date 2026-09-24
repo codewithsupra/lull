@@ -51,8 +51,11 @@ const PRESCRIBE_ASK =
 const MED_ASK_HI =
   /(दवा|दवाई|दवाएँ|गोली|गोलियां|गोलियाँ|खुराक|ख़ुराक|डोज़|डोज)[^।?!]*(लूँ|लूं|लेनी|लेना|बंद|बदल|बढ़ा|कम|छोड़|शुरू|दुगुन|दोगुन|कितनी|कौन)|(कितनी|कौन सी|कौनसी|क्या)[^।?!]*(दवा|दवाई|गोली|खुराक|डोज़)|(मुझे|मेरे को)[^।?!]*(डिप्रेशन|एंग्जायटी|चिंता रोग|बाइपोलर|एडीएचडी|ओसीडी|बीमारी)[^।?!]*(है|हो गया|हुआ है)\?|कौन सी बीमारी|क्या बीमारी है|कोई सप्लीमेंट/;
 
+/** Asking Lull to write a prescription, in Hindi or Hinglish. */
+const PRESCRIBE_ASK_HI = /(दवा|दवाई|गोली|पर्चा|प्रिस्क्रिप्शन)[^।?!]{0,20}(लिख|लिखो|लिख दो|लिख दीजिए)|प्रिस्क्रिप्शन/;
+
 const MED_ASK_HI_LATIN =
-  /\b(dawa|dawai|davai|goli|goliyan|khurak|khuraak|dose|doz)\b[^.?!]*\b(lu|loon|leni|lena|band|badal|badha|kam|chhod|shuru|dugun|kitni|kaunsi|kaun si)\b|\b(kitni|kaunsi|kaun si|kya)\b[^.?!]*\b(dawa|dawai|goli|khurak|dose)\b|\bmujhe\b[^.?!]*\b(depression|anxiety|bipolar|adhd|ocd|bimari)\b[^.?!]*\bhai\b|\bkoi supplement\b/i;
+  /\b(dawa|dawai|davai|goli|goliyan|khurak|khuraak|dose|doz)\b[^.?!]*\b(lu|loon|leni|lena|band|badal|badha|kam|chhod|shuru|dugun|kitni|kaunsi|kaun si)\b|\b(kitni|kaunsi|kaun si|kya)\b[^.?!]*\b(dawa|dawai|goli|khurak|dose)\b|\bmujhe\b[^.?!]*\b(depression|anxiety|bipolar|adhd|ocd|bimari)\b[^.?!]*\bhai\b|\bkoi supplement\b|\b(kitni|kitna|kaunsi|kaun si|kya)\b[^.?!]*\b(mg|dose|dawa|dawai|goli|khurak|melatonin|supplement|tablet)\b|\b(mg|dose|khurak)\b[^.?!]*\bsafe\b|\b(dawa|dawai|goli)\b[^.?!]*\blikh\b/i;
 
 /**
  * Screens a user turn before the model sees it.
@@ -62,7 +65,7 @@ export function classify(text: string): SafetyVerdict {
   // Language-independent by design: a Hindi-speaking user may type English and vice versa.
   if (isHarmText(text)) return { kind: "crisis" };
   const prescribing = MED_INTENT.test(text) && MED_ACTION.test(text) && MED_NOUN.test(text);
-  const askedInHindi = MED_ASK_HI.test(text) || MED_ASK_HI_LATIN.test(text);
+  const askedInHindi = MED_ASK_HI.test(text) || MED_ASK_HI_LATIN.test(text) || PRESCRIBE_ASK_HI.test(text);
   if (prescribing || askedInHindi || DIAGNOSIS_ASK.test(text) || MED_DOSE_ASK.test(text) || PRESCRIBE_ASK.test(text)) return { kind: "medical" };
   return { kind: "ok" };
 }

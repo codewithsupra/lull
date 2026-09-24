@@ -4,6 +4,8 @@ import { createInsForgeServerClient } from "@/lib/insforge/server";
 import { decrypt, decryptJson, decryptOpt } from "@/lib/crypto";
 import type { Outline, PlanTask, PlanView, Slot, TaskKind } from "@/lib/care-plan";
 import { addDays } from "@/lib/care-plan-tasks";
+import { getLocale } from "@/lib/i18n/server";
+import { messagesFor } from "@/lib/i18n";
 
 export { addDays, buildWeekTasks } from "@/lib/care-plan-tasks";
 
@@ -15,7 +17,10 @@ export const PRIVATE_ROUTING = { provider: { data_collection: "deny", zdr: true 
 export async function requireUser() {
   const insforge = await createInsForgeServerClient();
   const { data } = await insforge.auth.getCurrentUser();
-  if (!data?.user) return { error: NextResponse.json({ error: "Sign in first." }, { status: 401 }) } as const;
+  if (!data?.user) {
+    const t = messagesFor(await getLocale());
+    return { error: NextResponse.json({ error: t.errors.signIn }, { status: 401 }) } as const;
+  }
   return { insforge, userId: data.user.id } as const;
 }
 

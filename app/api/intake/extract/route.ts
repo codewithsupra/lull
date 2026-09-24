@@ -6,6 +6,7 @@ import { PRIVATE_ROUTING, requireUser, withinLimit } from "@/lib/care-plan-serve
 import { redactDeep } from "@/lib/redact";
 import { logError, logEvent } from "@/lib/log";
 import { requireFeature } from "@/lib/billing-server";
+import { apiErrors } from "@/lib/i18n/server";
 
 export const maxDuration = 60;
 
@@ -23,20 +24,21 @@ Rules:
 - If this is not a prescription or is unreadable, return {"readable": false, "medications": [], "diagnosis_hint": null}.`;
 
 export async function POST(request: NextRequest) {
+  const e = await apiErrors();
   const auth = await requireUser();
   if ("error" in auth) return auth.error;
   const { insforge, userId } = auth;
 
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");
-  if (!(file instanceof File)) return NextResponse.json({ error: "Attach a photo or PDF of your prescription." }, { status: 400 });
-  if (file.size > MAX_BYTES) return NextResponse.json({ error: "That file is over 8 MB. Try a smaller photo." }, { status: 413 });
-  if (!TYPES.has(file.type)) return NextResponse.json({ error: "Use a JPG, PNG, WEBP, HEIC photo or a PDF." }, { status: 415 });
+  if (!(file instanceof File)) return NextResponse.json({ error: e.scan.missing }, { status: 400 });
+  if (file.size > MAX_BYTES) return NextResponse.json({ error: e.scan.tooLarge }, { status: 413 });
+  if (!TYPES.has(file.type)) return NextResponse.json({ error: e.scan.wrongType }, { status: 415 });
 
   const gate = await requireFeature(insforge, "scan");
   if ("error" in gate) return gate.error;
   if (!(await withinLimit(insforge, "extract", gate.limit))) {
-    return NextResponse.json({ error: "You've scanned a lot today. Add medicines manually, or try again tomorrow." }, { status: 429 });
+    return NextResponse.json({ error: e.scan.tooMany }, { status: 429 });
   }
 
   // The file lives only in this request's memory: never written to disk, storage or logs.
@@ -68,6 +70,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(clean);
   } catch (err) {
     logError("intake.extract.failed", err, { user: userId });
-    return NextResponse.json({ error: "We couldn't read that one. Try a sharper, well-lit photo, or add medicines manually." }, { status: 502 });
+    return NextResponse.json({ error: e.scan.unreadable }, { status: 502 });
   }
 }

@@ -4,7 +4,7 @@ import type { ChatCompletionCreateParamsNonStreaming } from "openai/resources/ch
 import { openrouter, CHAT_MODEL, parseJsonReply } from "@/lib/ai/openrouter";
 import { WeekPlan, type MedicationInput, type Outline } from "@/lib/care-plan";
 import { PLAN_RULES, planLanguage } from "@/lib/care-plan-prompts";
-import { getLocale } from "@/lib/i18n/server";
+import { getLocale, apiErrors } from "@/lib/i18n/server";
 import { PRIVATE_ROUTING, addDays, buildWeekTasks, decryptTask, requireUser, withinLimit } from "@/lib/care-plan-server";
 import { decrypt, decryptJson, decryptOpt, encryptJson } from "@/lib/crypto";
 import { redactDeep } from "@/lib/redact";
@@ -21,6 +21,7 @@ const Reply = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const e = await apiErrors();
   const locale = await getLocale();
   const auth = await requireUser();
   if ("error" in auth) return auth.error;
@@ -34,14 +35,14 @@ export async function POST(request: NextRequest) {
     .eq("status", "active")
     .limit(1);
   const plan = plans?.[0] as { id: string; week_index: number; started_at: string; outline_enc: string; flags_enc: string | null } | undefined;
-  if (!plan) return NextResponse.json({ error: "No active plan." }, { status: 404 });
-  if (plan.week_index >= 4) return NextResponse.json({ error: "You've completed all four weeks." }, { status: 409 });
+  if (!plan) return NextResponse.json({ error: e.plan.none }, { status: 404 });
+  if (plan.week_index >= 4) return NextResponse.json({ error: e.plan.allWeeksDone }, { status: 409 });
   if (body.data.today < addDays(plan.started_at, plan.week_index * 7 - 1)) {
-    return NextResponse.json({ error: "Your next week unlocks on the last day of this one." }, { status: 409 });
+    return NextResponse.json({ error: e.plan.lockedUntilWeekEnd }, { status: 409 });
   }
   const gate = await requireFeature(insforge, "replan");
   if ("error" in gate) return gate.error;
-  if (!(await withinLimit(insforge, "replan", gate.limit))) return NextResponse.json({ error: "Try again tomorrow." }, { status: 429 });
+  if (!(await withinLimit(insforge, "replan", gate.limit))) return NextResponse.json({ error: e.plan.tryTomorrow }, { status: 429 });
 
   const [tasksRes, medsRes, moodRes] = await Promise.all([
     insforge.database
@@ -120,7 +121,7 @@ Reply with strict JSON: {"review": "2 warm sentences about their week (celebrate
     reply = redactDeep(Reply.parse(parseJsonReply(completion.choices[0]?.message?.content ?? "")));
   } catch (err) {
     logError("plan.replan.failed", err, { user: userId });
-    return NextResponse.json({ error: "The planner stumbled. Try again in a moment." }, { status: 502 });
+    return NextResponse.json({ error: e.plan.replanFailed }, { status: 502 });
   }
 
   outline.weeks[nextWeek] = { theme: reply.week.theme, focus: reply.week.focus, learn: reply.week.learn };
@@ -137,7 +138,7 @@ Reply with strict JSON: {"review": "2 warm sentences about their week (celebrate
   const { error: insertError } = await insforge.database.from("plan_tasks").insert(rows);
   if (insertError) {
     logError("plan.replan.insert", insertError, { user: userId });
-    return NextResponse.json({ error: "Couldn't save next week." }, { status: 500 });
+    return NextResponse.json({ error: e.plan.replanSaveFailed }, { status: 500 });
   }
   await insforge.database
     .from("care_plans")

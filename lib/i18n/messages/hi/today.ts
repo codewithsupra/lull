@@ -9,6 +9,8 @@ const today: Dict<typeof en> = {
     afternoon: "नमस्कार",
     evening: "शुभ संध्या",
     windingDown: "दिन ढल रहा है",
+    withName: "{greeting}, {name}।",
+    plain: "{greeting}।",
   },
   guestNote: "आप मेहमान के रूप में देख रहे हैं। साँस और ध्वनि पूरी तरह चलते हैं। स्ट्रीक, चेक-इन और रची गई सेशन सेव करने के लिए खाता बनाएँ।",
 

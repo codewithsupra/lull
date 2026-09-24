@@ -7,6 +7,7 @@ import { encrypt, encryptJson, encryptOpt } from "@/lib/crypto";
 import { redact, redactDeep } from "@/lib/redact";
 import { logError, logEvent } from "@/lib/log";
 import { PLAN_RULES, planLanguage } from "@/lib/care-plan-prompts";
+import { apiErrors } from "@/lib/i18n/server";
 
 export const maxDuration = 60;
 
@@ -31,6 +32,7 @@ const SHAPE = `Reply with strict JSON only:
 Week 1: 3-4 habits, 1-2 sessions, 5-7 learn cards. Keep each day to about 5-7 tasks including medications.`;
 
 export async function GET(request: NextRequest) {
+  const e = await apiErrors();
   const auth = await requireUser();
   if ("error" in auth) return auth.error;
   const today = request.nextUrl.searchParams.get("today") ?? new Date().toISOString().slice(0, 10);
@@ -39,7 +41,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ plan: await loadActivePlan(auth.insforge, today) });
   } catch (err) {
     logError("plan.load.failed", err, { user: auth.userId });
-    return NextResponse.json({ error: "Couldn't load your plan." }, { status: 500 });
+    return NextResponse.json({ error: e.plan.loadFailed }, { status: 500 });
   }
 }
 
@@ -54,16 +56,17 @@ const CONDITION_FOR_MODEL: Record<string, string> = {
 };
 
 export async function POST(request: NextRequest) {
+  const e = await apiErrors();
   const auth = await requireUser();
   if ("error" in auth) return auth.error;
   const { insforge, userId } = auth;
 
   const parsed = IntakeInput.safeParse(await request.json().catch(() => ({})));
-  if (!parsed.success) return NextResponse.json({ error: "Some answers are missing. Check the form and try again." }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: e.plan.incomplete }, { status: 400 });
   const input = parsed.data;
 
   if (!(await withinLimit(insforge, "plan", 5))) {
-    return NextResponse.json({ error: "You've generated several plans today. Try again tomorrow." }, { status: 429 });
+    return NextResponse.json({ error: e.plan.tooMany }, { status: 429 });
   }
 
   const crisisHint = CRISIS_TERMS.test(input.text);
@@ -102,7 +105,7 @@ export async function POST(request: NextRequest) {
     out = redactDeep(PlanOutput.parse(parseJsonReply(completion.choices[0]?.message?.content ?? "")));
   } catch (err) {
     logError("plan.generate.failed", err, { user: userId });
-    return NextResponse.json({ error: "The planner stumbled. Give it another try in a moment." }, { status: 502 });
+    return NextResponse.json({ error: e.plan.generateFailed }, { status: 502 });
   }
 
   const care =
@@ -145,7 +148,7 @@ export async function POST(request: NextRequest) {
   const planId = (planRows as { id: string }[] | null)?.[0]?.id;
   if (planError || !planId) {
     logError("plan.insert.failed", planError, { user: userId });
-    return NextResponse.json({ error: "Couldn't save your plan." }, { status: 500 });
+    return NextResponse.json({ error: e.plan.saveFailed }, { status: 500 });
   }
 
   const medRows = input.medications.map((m) => ({
@@ -172,7 +175,7 @@ export async function POST(request: NextRequest) {
   if (medRes.error || taskRes.error) {
     await insforge.database.from("care_plans").delete().eq("id", planId);
     logError("plan.tasks.failed", medRes.error ?? taskRes.error, { user: userId });
-    return NextResponse.json({ error: "Couldn't save your plan." }, { status: 500 });
+    return NextResponse.json({ error: e.plan.saveFailed }, { status: 500 });
   }
 
   logEvent("plan.created", { user: userId, category: input.category, meds: medRows.length, tasks: taskRows.length });
@@ -181,6 +184,7 @@ export async function POST(request: NextRequest) {
 
 /** Deletes every piece of health data we hold for this user. */
 export async function DELETE() {
+  const e = await apiErrors();
   const auth = await requireUser();
   if ("error" in auth) return auth.error;
   const { insforge, userId } = auth;
@@ -193,7 +197,7 @@ export async function DELETE() {
   const failed = results.find((r) => r.error);
   if (failed) {
     logError("plan.delete.failed", failed.error, { user: userId });
-    return NextResponse.json({ error: "Couldn't delete everything. Please try again." }, { status: 500 });
+    return NextResponse.json({ error: e.plan.deleteFailed }, { status: 500 });
   }
   logEvent("plan.deleted", { user: userId });
   return NextResponse.json({ ok: true });

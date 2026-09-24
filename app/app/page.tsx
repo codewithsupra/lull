@@ -90,8 +90,7 @@ export default function TodayPage() {
       <div>
         <p className="mono-label">{new Date().toLocaleDateString(tag, { weekday: "long", month: "long", day: "numeric" })}</p>
         <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight sm:text-5xl">
-          {greet}
-          {firstName ? `, ${firstName}` : ""}.
+          {firstName ? fmt(t.today.greeting.withName, { greeting: greet, name: firstName }) : fmt(t.today.greeting.plain, { greeting: greet })}
         </h1>
       </div>
 
@@ -194,8 +193,8 @@ export default function TodayPage() {
                   <li key={r.id} className="flex items-center gap-3 py-3 text-sm">
                     <span className="grid h-8 w-8 place-items-center rounded-full bg-white/5">{KIND_ICON[r.kind]}</span>
                     <span className="flex-1 truncate">{r.title}</span>
-                    <span className="font-mono text-xs text-muted">{formatDuration(r.duration_sec)}</span>
-                    <span className="w-16 text-right font-mono text-[10px] text-faint">{timeAgo(r.created_at)}</span>
+                    <span className="font-mono text-xs text-muted">{formatDuration(r.duration_sec, t)}</span>
+                    <span className="w-16 text-right font-mono text-[10px] text-faint">{timeAgo(r.created_at, t, tag)}</span>
                   </li>
                 ))}
               </ul>
