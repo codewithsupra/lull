@@ -27,6 +27,13 @@ const companion = {
   urgentHelp: "urgent help",
   clearFailed: "Couldn't clear.",
 
+  voiceReplies: "voice replies",
+  listening: "listening…",
+  micLabel: "Speak your message",
+  stopListening: "Stop listening",
+  voiceUnsupported: "Voice input isn't supported in this browser.",
+  speakReplyLabel: "Read this reply aloud",
+
   starters: [
     "I can't switch my brain off",
     "I keep putting everything off",

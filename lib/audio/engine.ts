@@ -1,5 +1,8 @@
 "use client";
 
+import type { Locale } from "@/lib/i18n";
+import { pickVoiceForLocale, VOICE_LANG_PREFIX } from "@/lib/voice";
+
 /**
  * Generative soundscape engine. Every layer is synthesized in real time with the
  * Web Audio API (noise buffers, filters, LFOs, oscillators) so nothing loops audibly
@@ -429,25 +432,21 @@ export function getEngine() {
 
 // ---------- speech ----------
 
-export function pickVoice(): SpeechSynthesisVoice | null {
+/** Picks the best installed voice for a language (FR8: Hindi TTS). Matching logic lives in lib/voice.ts, tested there. */
+export function pickVoice(locale: Locale = "en"): SpeechSynthesisVoice | null {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
-  const voices = window.speechSynthesis.getVoices().filter((v) => v.lang.startsWith("en"));
-  const preferred = ["Samantha", "Ava", "Serena", "Google UK English Female", "Karen", "Moira", "Daniel", "Microsoft Aria"];
-  for (const name of preferred) {
-    const v = voices.find((x) => x.name.includes(name));
-    if (v) return v;
-  }
-  return voices[0] ?? null;
+  return pickVoiceForLocale(window.speechSynthesis.getVoices(), locale);
 }
 
-export function speak(text: string, opts: { onEnd?: () => void } = {}) {
+export function speak(text: string, opts: { onEnd?: () => void; locale?: Locale } = {}) {
   if (!("speechSynthesis" in window)) {
     opts.onEnd?.();
     return;
   }
   const u = new SpeechSynthesisUtterance(text);
-  const voice = pickVoice();
+  const voice = pickVoice(opts.locale ?? "en");
   if (voice) u.voice = voice;
+  u.lang = voice?.lang ?? VOICE_LANG_PREFIX[opts.locale ?? "en"];
   u.rate = 0.84;
   u.pitch = 0.92;
   u.volume = 0.95;

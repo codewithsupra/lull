@@ -30,6 +30,13 @@ const companion: Dict<typeof en> = {
   urgentHelp: "तुरंत मदद",
   clearFailed: "मिटाया नहीं जा सका।",
 
+  voiceReplies: "आवाज़ में जवाब",
+  listening: "सुन रहा हूँ…",
+  micLabel: "बोलकर संदेश भेजें",
+  stopListening: "सुनना बंद करें",
+  voiceUnsupported: "इस ब्राउज़र में आवाज़ से टाइप करना उपलब्ध नहीं है।",
+  speakReplyLabel: "यह जवाब पढ़कर सुनाएँ",
+
   starters: [
     "मेरा दिमाग़ शांत ही नहीं होता",
     "मैं हर काम टालता रहता हूँ",

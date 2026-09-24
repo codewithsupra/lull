@@ -17,7 +17,7 @@ export function SessionPlayer({ plan, canLog, onFinished }: { plan: Plan; canLog
   const [voice, setVoice] = useState(true);
   const runRef = useRef(0);
   const startedRef = useRef(0);
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const sp = t.tools.session;
   const pattern = patternById(plan.breath);
   const patternCopy = t.tools.breath.patterns[pattern.id];
@@ -47,7 +47,7 @@ export function SessionPlayer({ plan, canLog, onFinished }: { plan: Plan; canLog
         window.setTimeout(() => resolve(runRef.current === run), Math.max(3500, text.split(/\s+/).length * 450));
         return;
       }
-      speak(text, { onEnd: () => resolve(runRef.current === run) });
+      speak(text, { onEnd: () => resolve(runRef.current === run), locale });
     });
 
   const play = async () => {
