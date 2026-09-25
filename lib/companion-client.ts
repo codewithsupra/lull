@@ -44,6 +44,12 @@ export async function sendMessage(message: string, h: StreamHandlers) {
   if (!reader) return h.onError("Something went wrong.");
   const decoder = new TextDecoder();
   let buffer = "";
+  // The server always sends an explicit `done` or `error` SSE event, then closes the stream.
+  // `reader.read()` reports `done: true` right after that close, which is a *second*, separate
+  // signal that the stream ended — not a second completion. Track whether we already got the
+  // explicit event so a normal reply doesn't get delivered to the caller twice (it was: every
+  // reply rendered as two identical message bubbles, and every voice reply was spoken twice).
+  let finished = false;
   for (;;) {
     const { value, done } = await reader.read();
     if (done) break;
@@ -56,11 +62,17 @@ export async function sendMessage(message: string, h: StreamHandlers) {
       if (!event || !raw) continue;
       const data = JSON.parse(raw);
       if (event === "delta") h.onDelta(data as string);
-      else if (event === "done") h.onDone();
-      else if (event === "error") h.onError(data.error ?? "My reply got cut off.");
+      else if (event === "done") {
+        finished = true;
+        h.onDone();
+      } else if (event === "error") {
+        finished = true;
+        h.onError(data.error ?? "My reply got cut off.");
+      }
     }
   }
-  h.onDone();
+  // Fallback only: the connection dropped before the server's explicit done/error event arrived.
+  if (!finished) h.onDone();
 }
 
 export async function loadHistory(): Promise<CompanionMessage[]> {
