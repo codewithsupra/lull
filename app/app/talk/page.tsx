@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { motion } from "motion/react";
 import { useUser } from "@/components/app/user-context";
 import { MAX_MESSAGE, starters, type CompanionMessage } from "@/lib/companion";
@@ -28,7 +28,16 @@ export default function TalkPage() {
   const recognizerRef = useRef<Recognizer | null>(null);
   const baseDraftRef = useRef("");
   const endRef = useRef<HTMLDivElement>(null);
-  const micSupported = isRecognitionSupported();
+  // isRecognitionSupported() branches on `typeof window`, so it must never run during the
+  // server render or the initial client render — the mic button would exist in the client's
+  // first paint but not in the server-rendered HTML, which is a hydration mismatch (React #418).
+  // useSyncExternalStore's server snapshot forces `false` for both the SSR pass and the first
+  // client render; only the post-hydration re-render sees the real client-only value.
+  const micSupported = useSyncExternalStore(
+    () => () => {},
+    () => isRecognitionSupported(),
+    () => false,
+  );
 
   const load = useCallback(() => {
     loadHistory()
