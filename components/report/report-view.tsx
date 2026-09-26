@@ -35,29 +35,35 @@ function Empty({ children }: { children: React.ReactNode }) {
 
 function ScoreChart({ points, d }: { points: ScreenerPoint[]; d: (iso: string) => string }) {
   if (points.length < 2) return null;
-  const W = 640, H = 170, L = 30, R = 12, T = 10, B = 26, MAX = 27;
+  // Dates sit in HTML below the SVG, not inside it: SVG text scales with the chart and would
+  // shrink to ~5px on a phone. Exact values are in the table underneath either way.
+  const W = 640, H = 150, L = 30, R = 12, T = 10, B = 8, MAX = 27;
   const x = (i: number) => L + (i * (W - L - R)) / (points.length - 1);
   const y = (v: number) => T + (1 - v / MAX) * (H - T - B);
   const line = (k: "phq9" | "gad7") => points.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p[k]).toFixed(1)}`).join(" ");
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="mt-5 w-full" role="img" aria-label="PHQ-9 and GAD-7 over time">
-      {[0, 5, 10, 15, 20, 27].map((v) => (
-        <g key={v}>
-          <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} stroke={v === 10 ? "#c9ccd4" : "#eef0f3"} strokeDasharray={v === 10 ? "4 4" : undefined} />
-          <text x={L - 6} y={y(v) + 3.5} textAnchor="end" fontSize="10" fill="#9aa0ad">{v}</text>
-        </g>
-      ))}
-      <path d={line("phq9")} fill="none" stroke="#2b3a67" strokeWidth="2.2" strokeLinejoin="round" />
-      <path d={line("gad7")} fill="none" stroke="#1f8a7a" strokeWidth="2.2" strokeDasharray="6 4" strokeLinejoin="round" />
-      {points.map((p, i) => (
-        <g key={p.at}>
-          <circle cx={x(i)} cy={y(p.phq9)} r="3" fill="#2b3a67" />
-          <circle cx={x(i)} cy={y(p.gad7)} r="3" fill="#fff" stroke="#1f8a7a" strokeWidth="1.8" />
-        </g>
-      ))}
-      <text x={L} y={H - 6} fontSize="10" fill="#9aa0ad">{d(points[0].at)}</text>
-      <text x={W - R} y={H - 6} fontSize="10" fill="#9aa0ad" textAnchor="end">{d(points[points.length - 1].at)}</text>
-    </svg>
+    <div className="mt-5">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="PHQ-9 and GAD-7 over time">
+        {[0, 5, 10, 15, 20, 27].map((v) => (
+          <g key={v}>
+            <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} stroke={v === 10 ? "#c9ccd4" : "#eef0f3"} strokeDasharray={v === 10 ? "4 4" : undefined} />
+            <text x={L - 6} y={y(v) + 4} textAnchor="end" fontSize="12" fill="#9aa0ad">{v}</text>
+          </g>
+        ))}
+        <path d={line("phq9")} fill="none" stroke="#2b3a67" strokeWidth="2.2" strokeLinejoin="round" />
+        <path d={line("gad7")} fill="none" stroke="#1f8a7a" strokeWidth="2.2" strokeDasharray="6 4" strokeLinejoin="round" />
+        {points.map((p, i) => (
+          <g key={p.at}>
+            <circle cx={x(i)} cy={y(p.phq9)} r="3" fill="#2b3a67" />
+            <circle cx={x(i)} cy={y(p.gad7)} r="3" fill="#fff" stroke="#1f8a7a" strokeWidth="1.8" />
+          </g>
+        ))}
+      </svg>
+      <div className="mt-1 flex justify-between text-[11px] text-[#9aa0ad]" style={{ paddingLeft: `${(L / W) * 100}%`, paddingRight: `${(R / W) * 100}%` }}>
+        <span>{d(points[0].at)}</span>
+        <span>{d(points[points.length - 1].at)}</span>
+      </div>
+    </div>
   );
 }
 
