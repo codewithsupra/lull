@@ -150,26 +150,57 @@ assistant won't cross — see the note on each)
 | 92 | Peer circles (FR6) | ⏸️ | Not built yet — M6 on the roadmap |
 | 93 | Therapist marketplace (FR7) | ⏸️ | Not built yet — M7–M8 on the roadmap |
 | 94 | Wearables integration (FR5) | ⏸️ | Not built yet — M9 on the roadmap |
-| 95 | Doctor report / share cards / buddy invites (FR10) | ⏸️ | Not built yet — M5 on the roadmap |
+| 95 | Share cards / buddy invites (FR10 remainder) | ⏸️ | Not built yet — M5b, next. The doctor report (M5a) shipped 2026-09-26, see its own section below |
 | 96 | DPDP rights centre | ⏸️ | Not built yet — M10 on the roadmap |
+
+## Doctor report (FR10, M5a) — added 2026-09-26
+
+Tested live against production on the day it shipped. The doctor-facing side needs no account,
+so it was driven end to end with a **synthetic** report (fake data), sealed by the production
+crypto code, inserted as a real share, opened, revoked and then deleted. The signed-in builder
+could not be driven: signing in to a production site is outside this assistant's boundaries,
+and the browser pane was signed out.
+
+| # | Feature | Status | Notes |
+|---|---|---|---|
+| 97 | Doctor opens `/r/<token>` with no account, report renders | ✅ | Real path: token → SHA-256 → admin-only DB function → HKDF key → AES-GCM open → render |
+| 98 | Every figure is correct | ✅ | Adherence (8/10 doses, 16/20 steps, per-week 2/3 · 3/4 · 3/3) and weekly mood averages (3.0 / 3.7 / 5.0) hand-checked against the synthetic input |
+| 99 | Self-harm item (PHQ-9 #9) callout | ✅ | Amber callout when endorsed at least once in the window, neutral line when never |
+| 100 | Report in Hindi | ✅ | Devanagari fonts, `lang="hi-IN"`, Hindi dates, user-added Hindi question intact |
+| 101 | Phone width (375px) | 🔧 | No horizontal scroll. **Fixed:** chart dates were SVG text that shrank to ~5px, so they're now HTML |
+| 102 | Print / Save as PDF | 🔧 | Real PDF generated with headless Chromium. **Fixed:** margins printed dark (`color-scheme: dark` on `<html>`), and the footer was orphaned on page 3. Now two clean A4 pages |
+| 103 | View counting | ✅ | Each open counted exactly once |
+| 104 | Revoke | ✅ | Link dead immediately. Re-enabling is refused by the DB trigger, and revocation time is server-stamped |
+| 105 | Expiry | ✅ | Expired link returns nothing (DB-level test). A 60-day expiry is rejected by the 31-day CHECK |
+| 106 | Unknown / tampered token | ✅ | One changed character looks identical to "expired": nothing reveals whether a link ever existed |
+| 107 | `/r/*` headers | ✅ | `no-store`, `noindex, nofollow, noarchive`, `Referrer-Policy: no-referrer` confirmed on the live response |
+| 108 | Signed-out API | ✅ | `GET /api/report`, `POST` and `PATCH /api/report/share` all return 401 |
+| 109 | Public anon key against the DB | ✅ | Direct REST read of `report_shares` → `permission denied`, and direct RPC of `open_report_share` → `permission denied` |
+| 110 | DB guards | ✅ | Only `r1:` ciphertext accepted (a `v1:` server-key blob is rejected), section whitelist, column-level insert (can't back-date or pre-set views) |
+| 111 | Signed-in builder `/app/report` | ❔ | Signed-out view ✅. Toggles, live preview, create link, copy, links list and revoke button **need you to sign in** so I can drive them. The API logic behind them is covered above and by `report.test.ts` |
+| 112 | Pro gate on creating links (402 → upgrade sheet) | ❔ | Server-enforced via `requireFeature("report")`, same mechanism as the live-verified gates (#76). Printing / PDF stays free |
+| 113 | Entry cards on Plan and Check results | ❔ | Need a signed-in session to see |
 
 ---
 
 ## Summary
 
-- **Live-verified working this session: 61 items** (✅, including the 2 that needed a fix first)
-- **Bugs found and fixed during this audit: 2** — both real, both in production before this
-  session, both now fixed, deployed, and covered by regression tests (see `verifyModule.md` §5)
-- **Verified with a caveat: 4** (⚠️) — none are bugs; each caveat is spelled out above
-- **Not live-tested this session, verified via code/unit tests only: 18** (❔) — mostly things
-  that require waiting a real week, a real payment, a real device, or would have destroyed
-  test state mid-audit
-- **Explicitly blocked by this assistant's own boundaries: 1** (#77 — entering a card number)
-- **Not yet built: 5** (⏸️) — all named on the public roadmap in `docs/requirements.md`, not
+- **Live-verified working: 73 items** (✅/🔧). That's 61 from the 2026-09-25 audit plus 12 from the
+  doctor report on 2026-09-26
+- **Bugs found and fixed during audits: 2 production bugs + 3 pre-release layout issues.** The two
+  production bugs (duplicate companion replies, Talk-page hydration) are fixed and regression-tested
+  (see `verifyModule.md` §5). The three doctor-report layout issues (chart legibility, dark print
+  margins, orphaned footer) were caught before any user saw the feature
+- **Verified with a caveat: 4** (⚠️). None are bugs, and each caveat is spelled out above
+- **Not live-tested, verified via code/unit tests only: 21** (❔). Mostly things that require
+  waiting a real week, a real payment, a real device, or a signed-in session I can't open myself
+- **Explicitly blocked by this assistant's own boundaries: 1** (#77, entering a card number)
+- **Not yet built: 5** (⏸️). All are on the public roadmap in `docs/requirements.md`, not
   hidden gaps
 
-**Full gate at the end of this audit:** `npm run verify` — 261/261 tests, typecheck clean, lint
-clean. `npm run build` — clean. InsForge advisor — 0 critical, 0 warning (1 info, by design).
-`npm run redteam` — 21/21 English, 21/21 Hindi, against the real production model.
+**Full gate after M5a (2026-09-26):** `npm run verify` passes 324/324 tests, with typecheck and
+lint clean. `npm run build` is clean. InsForge advisor reports 0 critical and 0 warning (2 info,
+both pre-existing and by design). `npm run redteam` scored 21/21 in English and 21/21 in Hindi at
+the last run (the companion is unchanged since).
 
 **No known open bugs as of this file's date.**
