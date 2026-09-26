@@ -19,7 +19,7 @@ const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : "
 
 function Section({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
-    <section className="report-section mt-9 break-inside-avoid-page">
+    <section className="report-section mt-9">
       <h2 className="flex items-baseline gap-3 border-b border-[#e3e5ea] pb-2 text-[13px] font-semibold uppercase tracking-[0.14em] text-[#4a5060]">
         <span className="tabular-nums text-[#9aa0ad]">{String(n).padStart(2, "0")}</span>
         {title}

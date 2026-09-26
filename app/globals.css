@@ -206,7 +206,8 @@ input[type="range"].slider::-moz-range-thumb {
    and the sheet loses its on-screen card styling so it fills an A4/Letter page cleanly. */
 @media print {
   @page { margin: 14mm; }
-  html, body { background: #fff !important; }
+  /* color-scheme matters: with `dark` (set on <html> above) Chrome paints the page-margin canvas dark. */
+  html, body { background: #fff !important; color-scheme: light !important; }
   body.grain::before, body.grain::after { display: none !important; }
   body * { visibility: hidden; }
   .report-sheet, .report-sheet * { visibility: visible; }
@@ -217,6 +218,9 @@ input[type="range"].slider::-moz-range-thumb {
     border-radius: 0 !important; box-shadow: none !important;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
-  .report-section { break-inside: avoid; }
+  /* Break between rows and cards, never inside them, and never strand a heading at a page foot. */
+  .report-section h2 { break-after: avoid; }
+  .report-section tr, .report-section li, .report-section .rounded-xl, .report-section svg { break-inside: avoid; }
+  .report-sheet header, .report-sheet footer { break-inside: avoid; }
   [data-print-hide] { display: none !important; }
 }
