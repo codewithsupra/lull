@@ -222,5 +222,11 @@ input[type="range"].slider::-moz-range-thumb {
   .report-section h2 { break-after: avoid; }
   .report-section tr, .report-section li, .report-section .rounded-xl, .report-section svg { break-inside: avoid; }
   .report-sheet header, .report-sheet footer { break-inside: avoid; }
+  /* Paper is denser than a screen: tighter rhythm keeps a typical report to two pages. */
+  .report-sheet header { padding-bottom: 14px !important; }
+  .report-sheet .report-section { margin-top: 20px !important; }
+  .report-sheet .report-section > div { margin-top: 10px !important; }
+  .report-sheet td, .report-sheet th { padding-top: 3px !important; padding-bottom: 3px !important; }
+  .report-sheet footer { margin-top: 20px !important; }
   [data-print-hide] { display: none !important; }
 }
