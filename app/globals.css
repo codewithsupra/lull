@@ -200,3 +200,23 @@ input[type="range"].slider::-moz-range-thumb {
   border-color: color-mix(in oklab, var(--mint) 50%, transparent);
   box-shadow: 0 0 0 3px rgba(142, 245, 212, 0.12);
 }
+
+/* ---------- FR10 doctor report: print / "Save as PDF" ----------
+   Only the report sheet prints: app chrome, controls and the dark page background drop away,
+   and the sheet loses its on-screen card styling so it fills an A4/Letter page cleanly. */
+@media print {
+  @page { margin: 14mm; }
+  html, body { background: #fff !important; }
+  body.grain::before, body.grain::after { display: none !important; }
+  body * { visibility: hidden; }
+  .report-sheet, .report-sheet * { visibility: visible; }
+  .report-sheet {
+    position: absolute; left: 0; top: 0;
+    max-width: none !important; width: 100% !important;
+    padding: 0 !important; margin: 0 !important;
+    border-radius: 0 !important; box-shadow: none !important;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .report-section { break-inside: avoid; }
+  [data-print-hide] { display: none !important; }
+}

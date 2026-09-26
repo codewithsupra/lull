@@ -128,6 +128,7 @@ const app = {
       insight: "AI pattern insights",
       compose: "AI-composed sessions",
       companion: "Talk to Lull",
+      report: "Private doctor-report links",
     },
     freePerks: [
       "Breathing, soundscapes & sleep timer",
@@ -143,7 +144,8 @@ const app = {
       "Adaptive re-plans every week",
       "15 AI-composed sessions a day",
       "AI insights on your mood patterns",
-      "Doctor report & full night garden (soon)",
+      "Private doctor-report links that expire",
+      "Full night garden (soon)",
     ],
     pro: {
       planLabel: "your plan · pro {interval}",

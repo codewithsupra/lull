@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { DAY_BONUS, levelFor, sessionHref, type PlanTask, type PlanView, type Slot } from "@/lib/care-plan";
 import { completeTask, currentPushSubscription, disablePush, enablePush, fetchCareStats, localToday, pushSupported, type CareStats } from "@/lib/care-client";
 import { NightGarden } from "./night-garden";
+import { ReportEntry } from "@/components/report/report-entry";
 import { useI18n } from "@/components/i18n/locale-provider";
 import { fmt } from "@/lib/i18n";
 import { handlePaywall } from "@/lib/billing-client";
@@ -347,6 +348,8 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
               </ul>
             </div>
           )}
+
+          <ReportEntry />
 
           <div className="glass rounded-3xl p-6">
             <p className="mono-label">{h.roadmapHeading}</p>

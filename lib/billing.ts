@@ -53,7 +53,7 @@ export const FREE_PLAN: Plan = {
   trial_available: true,
 };
 
-export type Feature = "scan" | "replan" | "insight" | "compose" | "companion";
+export type Feature = "scan" | "replan" | "insight" | "compose" | "companion" | "report";
 
 /** Free tier keeps everything that matters for safety and a real first win. */
 /** Limits only. Feature names live in `t.app.billing.features`. */
@@ -63,6 +63,8 @@ export const FEATURES: Record<Feature, { free: false | number; pro: number }> = 
   insight: { free: false, pro: 20 },
   compose: { free: 3, pro: 15 },
   companion: { free: 15, pro: 200 },
+  // Private doctor-report links (FR10). Printing / saving a PDF of your own report stays free.
+  report: { free: false, pro: 10 },
 };
 
 /** Daily allowance for a feature on this plan; 0 means locked. */

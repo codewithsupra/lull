@@ -5,6 +5,7 @@ import { type ScreenerRecord, type Severity, type Tier } from "@/lib/screeners";
 import { openCrisis } from "@/lib/safety-client";
 import { useI18n } from "@/components/i18n/locale-provider";
 import { fmt, type Messages } from "@/lib/i18n";
+import { ReportEntry } from "@/components/report/report-entry";
 
 export type HistoryPoint = { id: string; at: string; tier: Tier; risk: boolean; phq9: number; gad7: number; sleep: number };
 
@@ -165,6 +166,8 @@ export function CheckResults({ record, history, nextDue, onRetake }: { record: S
           </div>
         </div>
       </div>
+
+      <ReportEntry />
 
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-faint">
         <span>{r.disclaimer}</span>

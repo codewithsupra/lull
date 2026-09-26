@@ -39,6 +39,16 @@ const nextConfig: NextConfig = {
       { source: "/:path*", headers: securityHeaders },
       // Health data responses must never be cached by browsers, proxies or CDNs.
       { source: "/api/:path*", headers: [{ key: "Cache-Control", value: "no-store, max-age=0" }] },
+      // Shared doctor reports (FR10): the URL carries the decryption key, so it must never be
+      // cached, indexed, or leaked to another origin through the Referer header.
+      {
+        source: "/r/:path*",
+        headers: [
+          { key: "Cache-Control", value: "private, no-store, max-age=0" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+        ],
+      },
     ];
   },
 };

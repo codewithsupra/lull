@@ -11,7 +11,8 @@ import tools from "./tools";
 import app from "./app";
 import landing from "./landing";
 import errors from "./errors";
+import report from "./report";
 
-const en = { common, nav, meta, today, companion, crisis, safety, screeners, plan, tools, app, landing, errors };
+const en = { common, nav, meta, today, companion, crisis, safety, screeners, plan, tools, app, landing, errors, report };
 
 export default en;
