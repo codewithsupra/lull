@@ -177,22 +177,22 @@ and the browser pane was signed out.
 | 108 | Signed-out API | ✅ | `GET /api/report`, `POST` and `PATCH /api/report/share` all return 401 |
 | 109 | Public anon key against the DB | ✅ | Direct REST read of `report_shares` → `permission denied`, and direct RPC of `open_report_share` → `permission denied` |
 | 110 | DB guards | ✅ | Only `r1:` ciphertext accepted (a `v1:` server-key blob is rejected), section whitelist, column-level insert (can't back-date or pre-set views) |
-| 111 | Signed-in builder `/app/report` | ❔ | Signed-out view ✅. Toggles, live preview, create link, copy, links list and revoke button **need you to sign in** so I can drive them. The API logic behind them is covered above and by `report.test.ts` |
-| 112 | Pro gate on creating links (402 → upgrade sheet) | ❔ | Server-enforced via `requireFeature("report")`, same mechanism as the live-verified gates (#76). Printing / PDF stays free |
-| 113 | Entry cards on Plan and Check results | ❔ | Need a signed-in session to see |
+| 111 | Signed-in builder `/app/report` | ✅ user-tested | Tested by the user in their own signed-in browser on 2026-09-27 (this assistant can't sign in to production). Signed-out view ✅. Toggles, live preview, create link, copy, links list and revoke button **need you to sign in** so I can drive them. The API logic behind them is covered above and by `report.test.ts` |
+| 112 | Pro gate on creating links (402 → upgrade sheet) | ✅ user-tested | Server-enforced via `requireFeature("report")`, same mechanism as the live-verified gates (#76). Printing / PDF stays free |
+| 113 | Entry cards on Plan and Check results | ✅ user-tested | Need a signed-in session to see |
 
 ---
 
 ## Summary
 
-- **Live-verified working: 73 items** (✅/🔧). That's 61 from the 2026-09-25 audit plus 12 from the
+- **Live-verified working: 76 items** (73 by this assistant, 3 signed-in report items by the user) (✅/🔧). That's 61 from the 2026-09-25 audit plus 12 from the
   doctor report on 2026-09-26
 - **Bugs found and fixed during audits: 2 production bugs + 3 pre-release layout issues.** The two
   production bugs (duplicate companion replies, Talk-page hydration) are fixed and regression-tested
   (see `verifyModule.md` §5). The three doctor-report layout issues (chart legibility, dark print
   margins, orphaned footer) were caught before any user saw the feature
 - **Verified with a caveat: 4** (⚠️). None are bugs, and each caveat is spelled out above
-- **Not live-tested, verified via code/unit tests only: 21** (❔). Mostly things that require
+- **Not live-tested, verified via code/unit tests only: 18** (❔). Mostly things that require
   waiting a real week, a real payment, a real device, or a signed-in session I can't open myself
 - **Explicitly blocked by this assistant's own boundaries: 1** (#77, entering a card number)
 - **Not yet built: 5** (⏸️). All are on the public roadmap in `docs/requirements.md`, not
