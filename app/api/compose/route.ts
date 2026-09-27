@@ -1,7 +1,9 @@
+import type { ChatCompletionCreateParamsNonStreaming } from "openai/resources/chat/completions";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
 import { openrouter, CHAT_MODEL, parseJsonReply } from "@/lib/ai/openrouter";
+import { PRIVATE_ROUTING } from "@/lib/care-plan-server";
 import { PlanSchema } from "@/lib/plan";
 import { requireFeature } from "@/lib/billing-server";
 import { FEATURES } from "@/lib/billing";
@@ -76,7 +78,9 @@ export async function POST(request: NextRequest) {
         { role: "system", content: `${SYSTEM}\n\nLanguage:\n${LANGUAGE[locale]}` },
         { role: "user", content: `Session length: about ${minutes} minutes.\nHow I feel right now: ${prompt}` },
       ],
-    });
+      // Mood notes / feelings are health data: zero-retention providers only.
+      ...PRIVATE_ROUTING,
+    } as unknown as ChatCompletionCreateParamsNonStreaming);
     plan = PlanSchema.parse(parseJsonReply(completion.choices[0]?.message?.content ?? ""));
   } catch (err) {
     console.error("compose failed", err);

@@ -13,7 +13,8 @@ import landing from "./landing";
 import errors from "./errors";
 import report from "./report";
 import invite from "./invite";
+import community from "./community";
 
-const en = { common, nav, meta, today, companion, crisis, safety, screeners, plan, tools, app, landing, errors, report, invite };
+const en = { common, nav, meta, today, companion, crisis, safety, screeners, plan, tools, app, landing, errors, report, invite, community };
 
 export default en;

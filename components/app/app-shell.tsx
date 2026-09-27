@@ -20,6 +20,7 @@ const NAV = [
   { href: "/app", label: "today", key: "T", icon: "◐" },
   { href: "/app/plan", label: "plan", key: "P", icon: "❀" },
   { href: "/app/talk", label: "talk", key: "K", icon: "◍" },
+  { href: "/app/c", label: "community", key: "M", icon: "✺" },
   { href: "/app/compose", label: "compose", key: "C", icon: "✦" },
   { href: "/app/breathe", label: "breathe", key: "B", icon: "◎" },
   { href: "/app/sounds", label: "sounds", key: "S", icon: "∿" },
@@ -74,61 +75,62 @@ export function AppShell({ user, children }: { user: SessionUser | null; childre
       <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-bg/60 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <Link href="/" className="wordmark text-2xl">lull</Link>
-          <nav className="hidden items-center gap-1 md:flex">
+          <nav className="hidden items-center gap-0.5 lg:flex">
             {NAV.map((n) => (
               <Link
                 key={n.href}
                 href={n.href}
-                className={`group flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm transition ${
+                className={`group flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition ${
                   isActive(n.href) ? "bg-white/10 text-ink" : "text-muted hover:text-ink"
                 }`}
               >
                 {t.nav[n.label]}
-                <span className="font-mono text-[10px] text-faint group-hover:text-lime">{n.key}</span>
+                <span className="hidden font-mono text-[10px] text-faint group-hover:text-lime xl:inline">{n.key}</span>
               </Link>
             ))}
           </nav>
           <button
             onClick={openCrisis}
-            className="rounded-full border border-rose/50 px-3 py-1 text-xs font-semibold text-rose transition hover:bg-rose/10"
+            className="shrink-0 whitespace-nowrap rounded-full border border-rose/50 px-3 py-1 text-xs font-semibold text-rose transition hover:bg-rose/10"
             aria-label={t.common.helpNowLabel}
           >
             {t.common.helpNow}
           </button>
           <LanguageSwitcher />
           {user ? (
-            <form action={signOut} className="flex items-center gap-3">
+            <form action={signOut} className="flex shrink-0 items-center gap-3">
               {pro === false && (
-                <Link href="/app/pro" className="rounded-full bg-lime px-3 py-1 text-xs font-semibold text-bg shadow-[0_0_24px_-6px_var(--lime)]">
+                <Link href="/app/pro" className="whitespace-nowrap rounded-full bg-lime px-3 py-1 text-xs font-semibold text-bg shadow-[0_0_24px_-6px_var(--lime)]">
                   {t.common.goPro}
                 </Link>
               )}
               {pro && <span className="rounded-full border border-lime/40 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-lime">{t.common.pro}</span>}
-              <span className="hidden max-w-[160px] truncate text-xs text-muted sm:inline">{user.name ?? user.email}</span>
-              <button className="kbd">{t.common.signOut}</button>
+              {/* Shown only while the full nav is hidden: the header is capped at max-w-6xl, so from lg up the eight nav items need the room. */}
+              <span className="hidden max-w-[160px] truncate text-xs text-muted sm:inline lg:hidden">{user.name ?? user.email}</span>
+              <button className="kbd whitespace-nowrap">{t.common.signOut}</button>
             </form>
           ) : (
-            <Link href="/login" className="kbd">{t.common.logIn}</Link>
+            <Link href="/login" className="kbd shrink-0 whitespace-nowrap">{t.common.logIn}</Link>
           )}
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 pb-32 pt-8 sm:px-6 md:pb-16">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 pb-32 pt-8 sm:px-6 lg:pb-16">{children}</main>
       <PaywallHost />
       <CrisisSheet />
 
       {/* mobile tab bar */}
-      <nav className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-7 rounded-2xl border border-white/10 bg-bg/80 p-1.5 backdrop-blur-xl md:hidden">
+      <nav className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-8 rounded-2xl border border-white/10 bg-bg/80 p-1.5 backdrop-blur-xl lg:hidden">
         {NAV.map((n) => (
           <Link
             key={n.href}
             href={n.href}
-            className={`flex flex-col items-center gap-0.5 rounded-xl py-2 text-[9px] transition ${
+            className={`flex min-w-0 flex-col items-center gap-0.5 rounded-xl py-2 text-[9px] transition ${
               isActive(n.href) ? "bg-white/10 text-ink" : "text-muted"
             }`}
           >
             <span className="text-base leading-none">{n.icon}</span>
-            {t.nav[n.label]}
+            <span className="max-w-full truncate px-0.5">{t.nav[n.label]}</span>
           </Link>
         ))}
       </nav>

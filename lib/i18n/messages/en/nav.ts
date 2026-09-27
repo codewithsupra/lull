@@ -6,6 +6,7 @@ const nav = {
   breathe: "Breathe",
   sounds: "Sounds",
   journal: "Journal",
+  community: "Community",
 } as const;
 
 export default nav;

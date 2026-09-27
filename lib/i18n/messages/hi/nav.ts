@@ -9,6 +9,7 @@ const nav: Dict<typeof en> = {
   breathe: "साँस",
   sounds: "ध्वनि",
   journal: "डायरी",
+  community: "समुदाय",
 };
 
 export default nav;

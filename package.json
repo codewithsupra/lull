@@ -13,7 +13,8 @@
     "verify": "npm run typecheck && npm run lint && npm test",
     "gen:offline": "tsx scripts/gen-offline-safety.mts",
     "prebuild": "npm run gen:offline",
-    "redteam": "tsx scripts/redteam-companion.mts"
+    "redteam": "tsx scripts/redteam-companion.mts",
+    "redteam:community": "tsx scripts/redteam-community.mts"
   },
   "dependencies": {
     "@insforge/sdk": "^1.5.2",

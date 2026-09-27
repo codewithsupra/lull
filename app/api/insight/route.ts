@@ -1,9 +1,10 @@
+import type { ChatCompletionCreateParamsNonStreaming } from "openai/resources/chat/completions";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
 import { openrouter, CHAT_MODEL, parseJsonReply } from "@/lib/ai/openrouter";
 import { requireFeature } from "@/lib/billing-server";
-import { withinLimit } from "@/lib/care-plan-server";
+import { PRIVATE_ROUTING, withinLimit } from "@/lib/care-plan-server";
 import { getLocale, apiErrors } from "@/lib/i18n/server";
 
 const Insight = z.object({
@@ -51,7 +52,9 @@ export async function POST() {
         },
         { role: "user", content: JSON.stringify({ now: new Date().toISOString(), checkins: rows, practice: practice.data ?? [] }) },
       ],
-    });
+      // Mood notes / feelings are health data: zero-retention providers only.
+      ...PRIVATE_ROUTING,
+    } as unknown as ChatCompletionCreateParamsNonStreaming);
     return NextResponse.json(Insight.parse(parseJsonReply(completion.choices[0]?.message?.content ?? "")));
   } catch (err) {
     console.error("insight failed", err);
