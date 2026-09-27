@@ -150,7 +150,7 @@ assistant won't cross — see the note on each)
 | 92 | Peer circles (FR6) | ⏸️ | Not built yet — M6 on the roadmap |
 | 93 | Therapist marketplace (FR7) | ⏸️ | Not built yet — M7–M8 on the roadmap |
 | 94 | Wearables integration (FR5) | ⏸️ | Not built yet — M9 on the roadmap |
-| 95 | Share cards / buddy invites (FR10 remainder) | ⏸️ | Not built yet — M5b, next. The doctor report (M5a) shipped 2026-09-26, see its own section below |
+| 95 | Share cards / buddy invites (FR10) | ✅ | Shipped 2026-09-27 as M5b. See its own section below |
 | 96 | DPDP rights centre | ⏸️ | Not built yet — M10 on the roadmap |
 
 ## Doctor report (FR10, M5a) — added 2026-09-26
@@ -181,24 +181,49 @@ and the browser pane was signed out.
 | 112 | Pro gate on creating links (402 → upgrade sheet) | ✅ user-tested | Server-enforced via `requireFeature("report")`, same mechanism as the live-verified gates (#76). Printing / PDF stays free |
 | 113 | Entry cards on Plan and Check results | ✅ user-tested | Need a signed-in session to see |
 
+## Share cards & buddy invites (FR10, M5b) — added 2026-09-27
+
+The signed-in pages need an account, so the **visuals** were verified on a dev-only harness
+(`/app/invite/preview`, a 404 in production) that renders the real components with mock data.
+The **reward logic** was verified directly against the production database, using temporary
+marked rows that were deleted afterwards. Signed-in end-to-end use in production is for the user.
+
+| # | Feature | Status | Notes |
+|---|---|---|---|
+| 114 | Garden / streak / level cards render | 🔧 | 1080×1350 PNG, drawn on-device. **Fixed:** the tallest plants overlapped the text line on the streak card, so plant height is now capped (and tested) below the text block |
+| 115 | Cards in Hindi | ✅ | Canvas uses the page's Devanagari fonts, so conjuncts shape correctly ("दिन सँवारे", "उपवन") |
+| 116 | "Add my invite link" toggle | ✅ | Off by default. Turning it on redraws the card with the link footer |
+| 117 | Cards carry no health data | ✅ | By construction (the input type holds only streak, XP and days tended) and by test |
+| 118 | `/join/<code>` | ✅ | Live: 307 to the invite page, with an `HttpOnly; Secure; SameSite=Lax` cookie lasting 7 days. A malformed code sets no cookie |
+| 119 | After sign-up, land on the pending invite | ✅ unit-tested | `afterSignInPath` only follows a valid code, so it can't become an open redirect (7 hostile inputs tested) |
+| 120 | Join rules: invalid / self / already / mutual | ✅ | Each result exercised directly against the production function |
+| 121 | Reward needs 3 real days | ✅ | Three completions stamped at the same instant paid nothing. The existing anti-backdating trigger also prevents rewriting `completed_at` |
+| 122 | Both get 14 days; idempotent | ✅ | Paid out from either side. A repeat settle grants nothing more |
+| 123 | Stacking | ✅ | Buddy days start the second an existing trial ends |
+| 124 | Lifetime cap of 3 | ✅ | A capped person got nothing more, while their buddy still got theirs |
+| 125 | Anon key vs buddy tables/functions | ✅ | `permission denied` on all 3 tables and both functions (live) |
+| 126 | Signed-out `/api/buddy`, `/api/buddy/join` | ✅ | 401 (live) |
+| 127 | Pricing shows "Buddy Pro until …" | ❔ | Code path via `my_plan().grant_ends_at`; needs a real reward on a real account |
+| 128 | Native share sheet on a phone | ❔ | Uses `navigator.share({files})` with a download fallback; needs a real mobile device |
+
 ---
 
 ## Summary
 
-- **Live-verified working: 76 items** (73 by this assistant, 3 signed-in report items by the user) (✅/🔧). That's 61 from the 2026-09-25 audit plus 12 from the
-  doctor report on 2026-09-26
-- **Bugs found and fixed during audits: 2 production bugs + 3 pre-release layout issues.** The two
+- **Live-verified working: 89 items** (86 by this assistant, 3 signed-in report items by the user) (✅/🔧). That's 61 from the 2026-09-25 audit, 12 from the doctor report on 2026-09-26 and
+  13 from share cards and buddy invites on 2026-09-27
+- **Bugs found and fixed during audits: 2 production bugs + 4 pre-release layout issues.** The two
   production bugs (duplicate companion replies, Talk-page hydration) are fixed and regression-tested
-  (see `verifyModule.md` §5). The three doctor-report layout issues (chart legibility, dark print
-  margins, orphaned footer) were caught before any user saw the feature
+  (see `verifyModule.md` §5). The four pre-release layout issues (report chart legibility, dark print margins, orphaned
+  footer, share-card plants overlapping text) were caught before any user saw the features
 - **Verified with a caveat: 4** (⚠️). None are bugs, and each caveat is spelled out above
-- **Not live-tested, verified via code/unit tests only: 18** (❔). Mostly things that require
+- **Not live-tested, verified via code/unit tests only: 20** (❔). Mostly things that require
   waiting a real week, a real payment, a real device, or a signed-in session I can't open myself
 - **Explicitly blocked by this assistant's own boundaries: 1** (#77, entering a card number)
-- **Not yet built: 5** (⏸️). All are on the public roadmap in `docs/requirements.md`, not
+- **Not yet built: 4** (⏸️). All are on the public roadmap in `docs/requirements.md`, not
   hidden gaps
 
-**Full gate after M5a (2026-09-26):** `npm run verify` passes 324/324 tests, with typecheck and
+**Full gate after M5b (2026-09-27):** `npm run verify` passes 380/380 tests, with typecheck and
 lint clean. `npm run build` is clean. InsForge advisor reports 0 critical and 0 warning (2 info,
 both pre-existing and by design). `npm run redteam` scored 21/21 in English and 21/21 in Hindi at
 the last run (the companion is unchanged since).
