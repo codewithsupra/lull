@@ -1,0 +1,67 @@
+const invite = {
+  label: "share & invite",
+  heading: "Grow it together.",
+  intro: "Share a card of your progress, or invite a friend to do a plan with you. Your health details are never on a card and never shared with a buddy.",
+  entry: "Share & invite a buddy",
+  entryHint: "Progress cards, and 14 days of Pro for you and a friend.",
+  loading: "Getting things ready…",
+  loadFailed: "We couldn't load this page. Please try again.",
+
+  cards: {
+    heading: "Share a card",
+    hint: "Made on your device. Only numbers you'd happily post: no condition, medicines, scores or moods.",
+    none: "Complete a step in your Care Plan and your first card appears here.",
+    kinds: { garden: "Garden", streak: "Streak", level: "Level" },
+    gardenLabel: { one: "day tended", other: "days tended" },
+    gardenSub: "in my night garden",
+    streakLabel: { one: "day in a row", other: "days in a row" },
+    streakSub: "showing up for myself",
+    levelLabel: "Level {n}",
+    levelSub: "{xp} XP grown so far",
+    includeLink: "Add my invite link to the card",
+    share: "Share",
+    download: "Download",
+    shareTitle: "My night garden · Lull",
+  },
+
+  buddy: {
+    heading: "Invite a buddy",
+    how: "When your friend completes Care Plan steps on {active} different days, you both get {days} days of Lull Pro.",
+    privacy: "Your buddy never sees your plan, and you never see theirs. You only see whether the reward has unlocked.",
+    yourLink: "Your invite link",
+    copy: "Copy link",
+    copied: "Copied ✓",
+    shareInvite: "Send invite",
+    shareText: "Do a Lull plan with me. When you've done it on {active} days we both get {days} days of Pro: {url}",
+    invitedHeading: "Friends you invited",
+    noneInvited: "Nobody yet. Send your link to someone you'd like to do this with.",
+    joinedOn: "Joined {date}",
+    pending: "Reward unlocks when they've done {active} days",
+    rewarded: "✓ You both got {days} days of Pro",
+    rewardsUsed: "{n} of {max} buddy rewards used",
+    joinedHeading: "Your buddy",
+    joinedProgress: "{done} of {active} days done. Complete a plan step on a new day to move forward.",
+    joinedRewarded: "✓ Unlocked: you and your buddy each got {days} days of Pro",
+  },
+
+  join: {
+    heading: "A friend invited you to Lull.",
+    body: "Do a Care Plan together. When you've completed steps on {active} different days, you both get {days} days of Lull Pro.",
+    signUp: "Create a free account",
+    haveAccount: "I already have an account",
+    button: "Join as their buddy",
+    joining: "Joining…",
+    results: {
+      joined: "You're buddies now. Start your plan today.",
+      invalid: "That invite link doesn't work. Ask your friend to send it again.",
+      self: "That's your own invite link. Send it to a friend.",
+      already: "You've already joined a buddy.",
+      mutual: "You two are already buddies the other way round.",
+    },
+    toPlan: "Go to my plan",
+  },
+
+  proUntil: "Buddy Pro until {date}",
+};
+
+export default invite;

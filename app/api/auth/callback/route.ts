@@ -1,3 +1,4 @@
+import { BUDDY_COOKIE, afterSignInPath } from "@/lib/buddy";
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 import { createAuthActions } from "@insforge/sdk/ssr";
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=missing_verifier", request.url));
   }
 
-  const response = NextResponse.redirect(new URL("/app", request.url));
+  const response = NextResponse.redirect(new URL(afterSignInPath(request.cookies.get(BUDDY_COOKIE)?.value), request.url));
   const auth = createAuthActions({ requestCookies: request.cookies, responseCookies: response.cookies });
   const { data, error } = await auth.exchangeOAuthCode(code, codeVerifier);
   if (error || !data?.user) {

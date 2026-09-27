@@ -7,6 +7,7 @@ import { DAY_BONUS, levelFor, sessionHref, type PlanTask, type PlanView, type Sl
 import { completeTask, currentPushSubscription, disablePush, enablePush, fetchCareStats, localToday, pushSupported, type CareStats } from "@/lib/care-client";
 import { NightGarden } from "./night-garden";
 import { ReportEntry } from "@/components/report/report-entry";
+import { InviteEntry } from "@/components/share/invite-entry";
 import { useI18n } from "@/components/i18n/locale-provider";
 import { fmt } from "@/lib/i18n";
 import { handlePaywall } from "@/lib/billing-client";
@@ -350,6 +351,7 @@ export function PlanHome({ plan, onChanged, onDeleted, demoStats }: { plan: Plan
           )}
 
           <ReportEntry />
+          <InviteEntry />
 
           <div className="glass rounded-3xl p-6">
             <p className="mono-label">{h.roadmapHeading}</p>

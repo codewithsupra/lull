@@ -116,6 +116,11 @@ export function Pricing({ feature, compact, onPlan }: { feature?: Feature; compa
                     ? b.opening
                     : fmt(b.subscribe, { price: price?.label ?? "", interval: interval === "month" ? b.perMonthShort : b.perYearShort })}
                 </button>
+                {plan?.grant_ends_at && (
+                  <p className="text-center text-xs text-mint">
+                    {fmt(t.invite.proUntil, { date: new Date(plan.grant_ends_at).toLocaleDateString(tag, { month: "short", day: "numeric" }) })}
+                  </p>
+                )}
                 {plan?.source === "trial" && plan.trial_ends_at && (
                   <p className="text-center text-xs text-muted">
                     {fmt(b.trialEnds, { date: new Date(plan.trial_ends_at).toLocaleDateString(tag, { month: "short", day: "numeric" }) })}

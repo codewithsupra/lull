@@ -1,5 +1,5 @@
 import "server-only";
-import { createAdminClient } from "@insforge/sdk";
+import { createAdminInsForge } from "@/lib/insforge/admin";
 import { decrypt, decryptJson, decryptOpt } from "@/lib/crypto";
 import { addDays, REPORT_WINDOW_DAYS, type Report, type ReportInput } from "@/lib/report";
 import { TOKEN_RE, hashToken, openReport } from "@/lib/report-crypto";
@@ -63,8 +63,7 @@ export async function loadReportInput(insforge: ServerClient, today: string): Pr
  */
 export async function openShare(token: string): Promise<{ report: Report; locale: Locale } | null> {
   if (!TOKEN_RE.test(token)) return null;
-  const admin = createAdminClient({ baseUrl: process.env.NEXT_PUBLIC_INSFORGE_URL!, apiKey: process.env.INSFORGE_API_KEY! });
-  const { data, error } = await admin.database.rpc("open_report_share", { p_token_hash: hashToken(token) });
+  const { data, error } = await createAdminInsForge().database.rpc("open_report_share", { p_token_hash: hashToken(token) });
   if (error) {
     logError("report.share.open_failed", error);
     return null;

@@ -3,6 +3,12 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createAuthActions } from "@insforge/sdk/ssr";
+import { BUDDY_COOKIE, afterSignInPath } from "@/lib/buddy";
+
+/** Lands on a pending buddy invite (FR10) if the person arrived through /join/<code>. */
+async function landing() {
+  return afterSignInPath((await cookies()).get(BUDDY_COOKIE)?.value);
+}
 
 export type AuthState = { error: string | null };
 
@@ -25,7 +31,7 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
     password: String(formData.get("password") ?? ""),
   });
   if (error || !data?.user) return { error: error?.message ?? "Sign in failed. Check your email and password." };
-  redirect("/app");
+  redirect(await landing());
 }
 
 export async function signUp(_prev: AuthState, formData: FormData): Promise<AuthState> {
@@ -44,7 +50,7 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   if (data?.requireEmailVerification) {
     return { error: "Check your inbox to verify your email, then sign in." };
   }
-  redirect("/app");
+  redirect(await landing());
 }
 
 export async function signInWithProvider(provider: "google" | "github") {

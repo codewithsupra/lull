@@ -33,13 +33,15 @@ export function isKnownPrice(id: string) {
 
 export type Plan = {
   pro: boolean;
-  source: "subscription" | "trial" | "free";
+  source: "subscription" | "trial" | "buddy" | "free";
   status: string | null;
   interval: Interval | null;
   current_period_end: string | null;
   cancel_at: string | null;
   trial_ends_at: string | null;
   trial_available: boolean;
+  /** End of all stacked buddy-reward Pro time (FR10), if any is still to come. */
+  grant_ends_at: string | null;
 };
 
 export const FREE_PLAN: Plan = {
@@ -51,6 +53,7 @@ export const FREE_PLAN: Plan = {
   cancel_at: null,
   trial_ends_at: null,
   trial_available: true,
+  grant_ends_at: null,
 };
 
 export type Feature = "scan" | "replan" | "insight" | "compose" | "companion" | "report";
