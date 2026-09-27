@@ -206,24 +206,47 @@ marked rows that were deleted afterwards. Signed-in end-to-end use in production
 | 127 | Pricing shows "Buddy Pro until …" | ❔ | Code path via `my_plan().grant_ends_at`; needs a real reward on a real account |
 | 128 | Native share sheet on a phone | ❔ | Uses `navigator.share({files})` with a download fallback; needs a real mobile device |
 
+## Community: anonymous medicine discussions (added 2026-09-27)
+
+The logic and safety checks were verified directly: the AI moderator against the real model,
+and the database triggers and functions on production with synthetic anonymous keys (all
+deleted afterwards). Visuals were checked on a dev-only harness (`/app/c/preview`, a 404 in
+production). Signed-in, end-to-end posting on production is for the user.
+
+| # | Feature | Status | Notes |
+|---|---|---|---|
+| 129 | AI moderator: allows real experiences | ✅ | 12/12 in English, Hindi and Hinglish, including "Concerta is working like magic for me" and people naming their own dose. 3 runs, all 12/12 |
+| 130 | AI moderator: holds harmful posts | ✅ | 10/10: dosing advice to others, "stop your meds", skipping lithium to drink, chemist sourcing, promo codes, harassment, pills with alcohol, and Hindi/Hinglish variants. Crisis language is caught by the rule floor before the model sees it |
+| 131 | Rule floor (never loosened by the AI) | ✅ unit-tested | Crisis in 3 scripts, 8 sourcing phrasings incl. Hindi. **Fixed before release:** the Hindi "buy" pattern could never match (a misplaced nukta) |
+| 132 | Anonymity | ✅ | No forum table has a user-id column (test-enforced). Author = HMAC under an HKDF-derived key. Aliases are stable within a thread and differ across threads |
+| 133 | Upvote toggle; no self-votes; no downvotes | ✅ | Tested on production |
+| 134 | Comment counts, 3 reports hide, no double report | ✅ | Tested on production |
+| 135 | Hidden or deleted content leaves trending | ✅ | **Fixed before release:** votes on hidden or deleted posts were still counting toward "most upvoted this week" |
+| 136 | Deleting a post removes its comments and their votes | ✅ | Tested on production. The orphaned-vote cleanup was added before release |
+| 137 | Server-only access | ✅ | The anon key is refused on all 5 tables and the vote function (live). All APIs return 401 signed out (live) |
+| 138 | Recommended communities | ✅ unit-tested | Your own medicines, then plan focus, then engagement. Only existing communities, no duplicates, defaults for new users |
+| 139 | Shop-like or reserved community names refused | ✅ unit-tested | e.g. `buy-concerta`, `adderall-no-rx`, `admin`, `preview` |
+| 140 | Nav with 8 items at every width | 🔧 | **Fixed:** the 8th item overflowed the header at 768–1100px and would have wrapped the mobile tab bar. Verified at 375 / 1024 / 1280 / 1536, in EN and HI, with signed-in header markup injected |
+| 141 | Signed-in posting, commenting, voting, reporting in production | ❔ | Needs a signed-in session. The same code paths were tested at the function and database level above |
+
 ---
 
 ## Summary
 
-- **Live-verified working: 89 items** (86 by this assistant, 3 signed-in report items by the user) (✅/🔧). That's 61 from the 2026-09-25 audit, 12 from the doctor report on 2026-09-26 and
-  13 from share cards and buddy invites on 2026-09-27
+- **Live-verified working: 101 items** (98 by this assistant, 3 signed-in report items by the user) (✅/🔧). That's 61 from the 2026-09-25 audit, 12 from the doctor report on 2026-09-26 13 from share cards and buddy invites
+  and 12 from Community, both on 2026-09-27
 - **Bugs found and fixed during audits: 2 production bugs + 4 pre-release layout issues.** The two
   production bugs (duplicate companion replies, Talk-page hydration) are fixed and regression-tested
   (see `verifyModule.md` §5). The four pre-release layout issues (report chart legibility, dark print margins, orphaned
   footer, share-card plants overlapping text) were caught before any user saw the features
 - **Verified with a caveat: 4** (⚠️). None are bugs, and each caveat is spelled out above
-- **Not live-tested, verified via code/unit tests only: 20** (❔). Mostly things that require
+- **Not live-tested, verified via code/unit tests only: 21** (❔). Mostly things that require
   waiting a real week, a real payment, a real device, or a signed-in session I can't open myself
 - **Explicitly blocked by this assistant's own boundaries: 1** (#77, entering a card number)
 - **Not yet built: 4** (⏸️). All are on the public roadmap in `docs/requirements.md`, not
   hidden gaps
 
-**Full gate after M5b (2026-09-27):** `npm run verify` passes 380/380 tests, with typecheck and
+**Full gate after Community (2026-09-27):** `npm run verify` passes 475/475 tests, with typecheck and
 lint clean. `npm run build` is clean. InsForge advisor reports 0 critical and 0 warning (2 info,
 both pre-existing and by design). `npm run redteam` scored 21/21 in English and 21/21 in Hindi at
 the last run (the companion is unchanged since).
