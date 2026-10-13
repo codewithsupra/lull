@@ -229,11 +229,24 @@ production). Signed-in, end-to-end posting on production is for the user.
 | 140 | Nav with 8 items at every width | 🔧 | **Fixed:** the 8th item overflowed the header at 768–1100px and would have wrapped the mobile tab bar. Verified at 375 / 1024 / 1280 / 1536, in EN and HI, with signed-in header markup injected |
 | 141 | Signed-in posting, commenting, voting, reporting in production | ❔ | Needs a signed-in session. The same code paths were tested at the function and database level above |
 
+## Community moderation tools (added 2026-10-13)
+
+| # | Feature | Status | Notes |
+|---|---|---|---|
+| 142 | Moderation queue: crisis first, grouped reports | ✅ | Live on production via the real `loadDashboard()`: a 1-report crisis post outranked a 3-report spam post |
+| 143 | Restore | ✅ | Unhides and resets the count; leaves the queue. The same reporter can't re-hide it |
+| 144 | Dismiss / Remove | ✅ | Dismiss clears the queue item. Remove deletes the post with its replies and votes. A second remove is a clean "not found" |
+| 145 | Ban / unban by anonymous key | ✅ | `banFor()` sees it immediately. The team account can't be banned. Member write routes return 403 with a kind, bilingual message |
+| 146 | "Reply with help resources" | ✅ | Bilingual "Lull team" reply. Can't be reported. Quotes the Help button's real label in each language (test-enforced). No hardcoded phone numbers |
+| 147 | Audit log | ✅ | Every action logged. No content and no raw keys appear in the log or the dashboard |
+| 148 | Admin gate | ✅ unit-tested / ❔ live | `isAdmin` refuses 8 bad inputs (emails, wildcards, prefixes…). Production returns 404 until `ADMIN_USER_IDS` is set. Admin access itself needs the owner's signed-in session |
+| 149 | Dashboard UI | ✅ | Dev harness: queue, inline ban control, stats, tabs; no horizontal scroll at 375px |
+
 ---
 
 ## Summary
 
-- **Live-verified working: 101 items** (98 by this assistant, 3 signed-in report items by the user) (✅/🔧). That's 61 from the 2026-09-25 audit, 12 from the doctor report on 2026-09-26 13 from share cards and buddy invites
+- **Live-verified working: 108 items** (105 by this assistant, 3 signed-in report items by the user) (✅/🔧). That's 61 from the 2026-09-25 audit, 12 from the doctor report on 2026-09-26 13 from share cards and buddy invites
   and 12 from Community, both on 2026-09-27
 - **Bugs found and fixed during audits: 2 production bugs + 4 pre-release layout issues.** The two
   production bugs (duplicate companion replies, Talk-page hydration) are fixed and regression-tested
@@ -246,7 +259,7 @@ production). Signed-in, end-to-end posting on production is for the user.
 - **Not yet built: 4** (⏸️). All are on the public roadmap in `docs/requirements.md`, not
   hidden gaps
 
-**Full gate after Community (2026-09-27):** `npm run verify` passes 475/475 tests, with typecheck and
+**Full gate after moderation tools (2026-10-13):** `npm run verify` passes 515/515 tests, with typecheck and
 lint clean. `npm run build` is clean. InsForge advisor reports 0 critical and 0 warning (2 info,
 both pre-existing and by design). `npm run redteam` scored 21/21 in English and 21/21 in Hindi at
 the last run (the companion is unchanged since).

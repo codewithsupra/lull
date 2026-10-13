@@ -190,6 +190,8 @@ export type CommentView = {
   created_at: string;
   alias: [number, number];
   op: boolean;
+  /** Written by the Lull moderation team (e.g. a crisis-resources reply). */
+  team: boolean;
   mine: boolean;
   voted: boolean;
 };

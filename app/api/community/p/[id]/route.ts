@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/care-plan-server";
 import { CommentInput, scrub } from "@/lib/community";
 import { authorKey, communityDb, getThread, moderate, withinCommunityLimit } from "@/lib/community-server";
+import { banFor } from "@/lib/moderation-server";
 import { getMessages } from "@/lib/i18n/server";
 import { logError, logEvent } from "@/lib/log";
 
@@ -34,6 +35,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!id.success) return NextResponse.json({ error: e.notFound }, { status: 404 });
   const key = authorKey(auth.userId);
 
+  if (await banFor(key)) return NextResponse.json({ error: e.banned }, { status: 403 });
   const parsed = CommentInput.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: e.invalidComment }, { status: 400 });
   if (!(await withinCommunityLimit("comments", key))) return NextResponse.json({ error: e.tooManyComments }, { status: 429 });

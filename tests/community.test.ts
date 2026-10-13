@@ -175,7 +175,7 @@ describe("anonymity", () => {
 });
 
 describe("threadComments", () => {
-  const cm = (id: string, parent_id: string | null): CommentView => ({ id, parent_id, body: id, score: 0, created_at: "2026-09-27T00:00:00Z", alias: [0, 0], op: false, mine: false, voted: false });
+  const cm = (id: string, parent_id: string | null): CommentView => ({ id, parent_id, body: id, score: 0, created_at: "2026-09-27T00:00:00Z", alias: [0, 0], op: false, team: false, mine: false, voted: false });
   it("nests replies under their top-level comment, flattening deeper chains", () => {
     const out = threadComments([cm("a", null), cm("b", "a"), cm("c", "b"), cm("d", null)]);
     expect(out.map((c) => c.id)).toEqual(["a", "d"]);
@@ -234,7 +234,8 @@ describe("SQL agrees with the app", () => {
   });
   it("stores no user id in any forum table", () => {
     const tables = sql.match(/CREATE TABLE public\.forum_\w+ \([\s\S]*?\n\);/g) ?? [];
-    expect(tables.length).toBe(5);
+    // 5 community tables + forum_bans and forum_mod_log from *_community-moderation.sql.
+    expect(tables.length).toBe(7);
     for (const t of tables) expect(t).not.toMatch(/user_id|auth\.users|auth\.uid/);
   });
   it("gives no client role any grant", () => {

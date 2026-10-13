@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireUser } from "@/lib/care-plan-server";
 import { PostInput, scrub } from "@/lib/community";
 import { authorKey, communityDb, ensureCommunity, getFeed, moderate, withinCommunityLimit } from "@/lib/community-server";
+import { banFor } from "@/lib/moderation-server";
 import { getMessages } from "@/lib/i18n/server";
 import { logError, logEvent } from "@/lib/log";
 
@@ -26,6 +27,7 @@ export async function POST(request: NextRequest) {
   if ("error" in auth) return auth.error;
   const key = authorKey(auth.userId);
 
+  if (await banFor(key)) return NextResponse.json({ error: e.banned }, { status: 403 });
   const parsed = PostInput.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: e.invalidPost }, { status: 400 });
   if (!(await withinCommunityLimit("posts", key))) return NextResponse.json({ error: e.tooManyPosts }, { status: 429 });

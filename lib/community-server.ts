@@ -22,6 +22,7 @@ import {
   type Feed,
 } from "@/lib/community";
 import type { Category } from "@/lib/care-plan";
+import { TEAM_KEY } from "@/lib/moderation";
 import type { ServerClient } from "@/lib/care-plan-server";
 
 /**
@@ -150,6 +151,7 @@ export async function getThread(id: string, key: string): Promise<{ post: PostSu
       // Seeded by the thread (the post id), so a person keeps one alias throughout the thread.
       alias: aliasSeed(c.author_key, id),
       op: c.author_key === row.author_key,
+      team: c.author_key === TEAM_KEY,
       mine: c.author_key === key,
       voted: voted.has(c.id),
     })),

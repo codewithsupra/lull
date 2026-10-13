@@ -51,6 +51,9 @@ const community = {
   comments: { one: "1 comment", other: "{n} comments" },
   op: "OP",
   you: "you",
+  team: "Lull team",
+  teamResources:
+    "💙 From the Lull team: if you're going through something heavy right now, you don't have to handle it alone. Tap “Help now” at the top of any screen for free, confidential helplines near you, available any time.",
   reply: "Reply",
   commentPlaceholder: "Add a supportive comment…",
   replyPlaceholder: "Write a reply…",
@@ -98,6 +101,7 @@ const community = {
     notFound: "This post isn't available.",
     actionFailed: "That didn't work. Please try again.",
     cantVote: "You can't upvote this.",
+    banned: "Your community access is paused for now, so you can't post, comment or vote. You can still read, and everything else in Lull works as usual.",
   },
 
   alias: {

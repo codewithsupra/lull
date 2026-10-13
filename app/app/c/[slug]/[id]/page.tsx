@@ -109,7 +109,11 @@ function Comment({ comment, now, postId, onChanged, replyTo }: { comment: Commen
   return (
     <div>
       <p className="text-xs text-muted">
-        {aliasFor(comment.alias, c.alias)}
+        {comment.team ? (
+          <span className="rounded bg-mint/15 px-1.5 py-0.5 text-[11px] font-semibold text-mint">✓ {c.team}</span>
+        ) : (
+          aliasFor(comment.alias, c.alias)
+        )}
         {comment.op && <span className="ml-1 rounded bg-sky/15 px-1 text-[10px] font-semibold text-sky">{c.op}</span>}
         {comment.mine && <span className="text-mint"> ({c.you})</span>} · {ago(comment.created_at, now, c.ago)}
       </p>
@@ -118,7 +122,11 @@ function Comment({ comment, now, postId, onChanged, replyTo }: { comment: Commen
         <VoteButton type="comment" id={comment.id} score={comment.score} voted={comment.voted} disabled={comment.mine} />
         <button onClick={() => setReplying((v) => !v)} className="text-xs text-muted hover:text-ink">{c.reply}</button>
         <span className="ml-auto">
-          {comment.mine ? <button onClick={del} className="text-xs text-muted hover:text-rose">{c.delete}</button> : <ReportMenu type="comment" id={comment.id} />}
+          {comment.mine ? (
+            <button onClick={del} className="text-xs text-muted hover:text-rose">{c.delete}</button>
+          ) : comment.team ? null : (
+            <ReportMenu type="comment" id={comment.id} />
+          )}
         </span>
       </div>
       {replying && (
