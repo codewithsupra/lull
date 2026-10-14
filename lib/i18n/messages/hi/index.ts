@@ -14,7 +14,8 @@ import errors from "./errors";
 import report from "./report";
 import invite from "./invite";
 import community from "./community";
+import privacy from "./privacy";
 
-const hi = { common, nav, meta, today, companion, crisis, safety, screeners, plan, tools, app, landing, errors, report, invite, community };
+const hi = { common, nav, meta, today, companion, crisis, safety, screeners, plan, tools, app, landing, errors, report, invite, community, privacy };
 
 export default hi;

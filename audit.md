@@ -151,7 +151,7 @@ assistant won't cross — see the note on each)
 | 93 | Therapist marketplace (FR7) | ⏸️ | Not built yet — M7–M8 on the roadmap |
 | 94 | Wearables integration (FR5) | ⏸️ | Not built yet — M9 on the roadmap |
 | 95 | Share cards / buddy invites (FR10) | ✅ | Shipped 2026-09-27 as M5b. See its own section below |
-| 96 | DPDP rights centre | ⏸️ | Not built yet — M10 on the roadmap |
+| 96 | DPDP rights centre | ✅ | Shipped 2026-10-14. See its own section below |
 
 ## Doctor report (FR10, M5a) — added 2026-09-26
 
@@ -242,11 +242,24 @@ production). Signed-in, end-to-end posting on production is for the user.
 | 148 | Admin gate | ✅ unit-tested / ❔ live | `isAdmin` refuses 8 bad inputs (emails, wildcards, prefixes…). Production returns 404 until `ADMIN_USER_IDS` is set. Admin access itself needs the owner's signed-in session |
 | 149 | Dashboard UI | ✅ | Dev harness: queue, inline ban control, stats, tabs; no horizontal scroll at 375px |
 
+## Privacy centre: DPDP rights (added 2026-10-14)
+
+| # | Feature | Status | Notes |
+|---|---|---|---|
+| 150 | Account deletion erases everything | ✅ | **Live on production** with a synthetic account row (no password, `.invalid` email): profile, check-in, safety plan, usage and buddy code rows all removed by cascade. Community post, the thread under it, its votes, the person's votes and reports, and their ban were all removed. Someone else's post was untouched. A repeat call cleanly reports "already gone" |
+| 151 | Inventory completeness | ✅ unit-tested | Every table the migrations create must be in the inventory or marked non-personal, and every personal table must cascade from the account. Mutation-checked with a new table, a dropped category, and a removed cascade |
+| 152 | Download my data | ✅ unit-tested / ❔ live | Generic decryption of `*_enc` (incl. Hindi), unreadable rows don't break the export, report blobs and other people's ids are never included. The live download needs a signed-in session |
+| 153 | Correct name | ❔ | `setProfile`; needs a signed-in session |
+| 154 | Deletion blocked while a subscription renews | ✅ unit-tested | Active/trialing/past_due block it; cancel-at-period-end, free, trial and buddy plans don't. UI shows "cancel first" (checked in the harness, in Hindi) |
+| 155 | Typed confirmation | ✅ | Only an exact `DELETE` enables the button (checked live in the harness: "", "delete", "DELETE ", "DELET" stay disabled); also enforced server-side |
+| 156 | Payment records retained | ✅ disclosed | InsForge `payments.*` kept for tax law, and stated plainly on the page |
+| 157 | Grievance officer | ⚠️ | Shown from env vars; until they're set the page says details are being finalised |
+
 ---
 
 ## Summary
 
-- **Live-verified working: 108 items** (105 by this assistant, 3 signed-in report items by the user) (✅/🔧). That's 61 from the 2026-09-25 audit, 12 from the doctor report on 2026-09-26 13 from share cards and buddy invites
+- **Live-verified working: 113 items** (110 by this assistant, 3 signed-in report items by the user) (✅/🔧). That's 61 from the 2026-09-25 audit, 12 from the doctor report on 2026-09-26 13 from share cards and buddy invites
   and 12 from Community, both on 2026-09-27
 - **Bugs found and fixed during audits: 2 production bugs + 4 pre-release layout issues.** The two
   production bugs (duplicate companion replies, Talk-page hydration) are fixed and regression-tested
@@ -256,10 +269,10 @@ production). Signed-in, end-to-end posting on production is for the user.
 - **Not live-tested, verified via code/unit tests only: 21** (❔). Mostly things that require
   waiting a real week, a real payment, a real device, or a signed-in session I can't open myself
 - **Explicitly blocked by this assistant's own boundaries: 1** (#77, entering a card number)
-- **Not yet built: 4** (⏸️). All are on the public roadmap in `docs/requirements.md`, not
+- **Not yet built: 3** (⏸️). All are on the public roadmap in `docs/requirements.md`, not
   hidden gaps
 
-**Full gate after moderation tools (2026-10-13):** `npm run verify` passes 515/515 tests, with typecheck and
+**Full gate after the privacy centre (2026-10-14):** `npm run verify` passes 583/583 tests, with typecheck and
 lint clean. `npm run build` is clean. InsForge advisor reports 0 critical and 0 warning (2 info,
 both pre-existing and by design). `npm run redteam` scored 21/21 in English and 21/21 in Hindi at
 the last run (the companion is unchanged since).

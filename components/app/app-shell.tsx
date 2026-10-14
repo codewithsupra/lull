@@ -115,7 +115,12 @@ export function AppShell({ user, children }: { user: SessionUser | null; childre
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 pb-32 pt-8 sm:px-6 lg:pb-16">{children}</main>
+      <main className={`mx-auto max-w-6xl px-4 pt-8 sm:px-6 ${user ? "pb-10" : "pb-32 lg:pb-16"}`}>{children}</main>
+      {user && (
+        <footer className="mx-auto max-w-6xl px-4 pb-32 text-center text-xs text-faint sm:px-6 lg:pb-10">
+          <Link href="/app/privacy" className="hover:text-ink">{t.privacy.link}</Link>
+        </footer>
+      )}
       <PaywallHost />
       <CrisisSheet />
 
